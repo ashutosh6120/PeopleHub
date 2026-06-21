@@ -4,12 +4,114 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>Root Config</title>
+  <title>People Hub</title>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: localhost:*; script-src 'unsafe-inline' 'unsafe-eval' https: localhost:*; connect-src https: localhost:* ws://localhost:*; style-src 'unsafe-inline' https:; object-src 'none';">
   <meta name="importmap-type" use-injector />
-  <!-- If you wish to turn off import-map-overrides for specific environments (prod), uncomment the line below -->
-  <!-- More info at https://github.com/single-spa/import-map-overrides/blob/main/docs/configuration.md#domain-list -->
-  <!-- <meta name="import-map-overrides-domains" content="denylist:prod.example.com" /> -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #f8fafc; min-height: 100vh; }
+
+    /* ===== LOGIN PAGE ===== */
+    #login-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #e8f4fd 0%, #ffffff 50%);
+    }
+    #login-page.hidden { display: none; }
+
+    .login-avatar {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: #1976D2; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+    .login-avatar svg { width: 28px; height: 28px; fill: white; }
+
+    .login-title { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+    .login-subtitle { font-size: 14px; color: #64748b; margin-bottom: 32px; }
+
+    .login-card {
+      background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 32px; width: 100%; max-width: 420px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 500; color: #334155; margin-bottom: 6px; }
+    .form-group input {
+      width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px;
+      font-size: 14px; color: #1e293b; outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: #1976D2; box-shadow: 0 0 0 3px rgba(25,118,210,0.1); }
+    .form-group input::placeholder { color: #94a3b8; }
+
+    .login-btn {
+      width: 100%; padding: 12px; background: #1976D2; color: white; border: none;
+      border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .login-btn:hover { background: #1565C0; }
+
+    .login-error { color: #dc2626; font-size: 13px; margin-top: 12px; display: none; }
+
+    .demo-credentials {
+      margin-top: 24px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center;
+    }
+    .demo-credentials p:first-child { font-size: 11px; font-weight: 600; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px; }
+    .demo-credentials p { font-size: 13px; color: #64748b; margin-bottom: 4px; }
+
+    /* ===== APP SHELL (navbar + content) ===== */
+    #app-shell { display: none; }
+    #app-shell.visible { display: block; }
+
+    .navbar {
+      background: white; border-bottom: 1px solid #e2e8f0; padding: 0 24px;
+      height: 56px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .navbar-left { display: flex; align-items: center; gap: 8px; }
+    .navbar-logo {
+      width: 32px; height: 32px; border-radius: 50%; background: #1976D2;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .navbar-logo svg { width: 18px; height: 18px; fill: white; }
+    .navbar-brand { font-size: 15px; font-weight: 600; color: #1e293b; }
+
+    .navbar-center { display: flex; gap: 32px; }
+    .navbar-center a {
+      font-size: 14px; font-weight: 500; color: #64748b; text-decoration: none;
+      padding: 16px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+    }
+    .navbar-center a:hover { color: #1976D2; }
+    .navbar-center a.active { color: #1976D2; border-bottom-color: #1976D2; }
+
+    .navbar-right { display: flex; align-items: center; gap: 12px; }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: #1976D2;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; color: white;
+    }
+    .user-info { text-align: right; }
+    .user-name { font-size: 13px; font-weight: 600; color: #1e293b; }
+    .user-role {
+      font-size: 11px; font-weight: 500; color: #1976D2; background: #e3f2fd;
+      padding: 1px 6px; border-radius: 4px;
+    }
+    .logout-btn {
+      font-size: 13px; color: #64748b; background: none; border: none;
+      cursor: pointer; padding: 6px 10px; border-radius: 4px; transition: all 0.2s;
+    }
+    .logout-btn:hover { background: #f1f5f9; color: #dc2626; }
+
+    #app-content { padding: 0; min-height: calc(100vh - 56px); }
+  </style>
 
   <!-- Shared dependencies go into this import map -->
   <script type="injector-importmap">
@@ -20,9 +122,6 @@
     }
   </script>
   <link rel="preload" href="https://cdn.jsdelivr.net/npm/single-spa@6.0.3/lib/es2015/esm/single-spa.min.js" as="module">
-
-  <!-- Add your organization's prod import map URL to this script's src  -->
-  <!-- <script type="injector-importmap" src="/importmap.json"></script> -->
 
   <% if (isLocal) { %>
   <script type="injector-importmap">
@@ -54,7 +153,163 @@
   <noscript>
     You need to enable JavaScript to run this app.
   </noscript>
-  <main></main>
+
+  <!-- Login Page -->
+  <div id="login-page">
+    <div class="login-avatar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+    </div>
+    <h1 class="login-title">Welcome back</h1>
+    <p class="login-subtitle">Sign in to HR Portal</p>
+
+    <div class="login-card">
+      <form id="login-form">
+        <div class="form-group">
+          <label for="email">Email address</label>
+          <input type="email" id="email" placeholder="you@company.com" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="*******" required>
+        </div>
+        <button type="submit" class="login-btn">Sign In</button>
+        <p class="login-error" id="login-error">Invalid email or password</p>
+      </form>
+
+      <div class="demo-credentials">
+        <p>DEMO CREDENTIALS</p>
+        <p>Admin: admin@company.com / admin123</p>
+        <p>Employee: james@company.com / james123</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-shell">
+    <nav class="navbar">
+      <div class="navbar-left">
+        <div class="navbar-logo">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>
+        <span class="navbar-brand">HR Portal</span>
+      </div>
+
+      <div class="navbar-center">
+        <a href="/employees" id="nav-employees" class="active">Employees</a>
+        <a href="/leaves" id="nav-leaves">Leave Management</a>
+      </div>
+
+      <div class="navbar-right">
+        <div class="user-avatar" id="user-avatar"></div>
+        <div class="user-info">
+          <div class="user-name" id="user-name"></div>
+          <span class="user-role" id="user-role"></span>
+        </div>
+        <button class="logout-btn" id="logout-btn">← Logout</button>
+      </div>
+    </nav>
+
+    <div id="app-content">
+      <main></main>
+    </div>
+  </div>
+
+  <script>
+    // Auth logic -  temporary for now mock users until api is ready
+    var MOCK_USERS = [
+      { email: 'admin@company.com', password: 'admin123', name: 'Choi Mina Sue', role: 'Admin', initials: 'CM'},
+      { email: 'ashu@company.com', password: 'ashu123', name: 'Ashu Chen', role: 'Employee', initials: 'AC'}
+    ];
+
+    function getAuthUser() {
+      var stored = localStorage.getItem('hr_portal_user');
+      return stored ? JSON.parse(stored) : null;
+    }
+
+    function setAuthUser() {
+      localStorage.setItem('hr_portal_user', JSON.stringify(user));
+    }
+
+    function clearAuth() {
+      localStorage.removeItem('hr_portal_user');
+    }
+
+    function showApp() {
+      var user = getAuthUser();
+      if(!user) return showLogin();
+
+      document.getElementById('login-page').classList.add('hidden');
+      document.getElementById('app-shell').classList.add('visible');
+      document.getElementById('user-name').textContent = user.name;
+      document.getElementById('user-role').textContent = user.role;
+      document.getElementById('user-avatar').textContent = user.initials;
+
+      // store user info globally so microfrontends can access it
+      window.__HR_PORTAL_USER__ = user;
+
+      updateActiveNav();
+    }
+
+    function showLogin() {
+      document.getElementById('login-page').classList.remove('hidden');
+      document.getElementById('app-shell').classList.remove('visible');
+      window.__HR_PORTAL_USER__ = null;
+    }
+
+    function updateActiveNav() {
+      var path = window.location.pathname;
+      document.getElementById('nav-employees').classList.toggle('active', path.startsWith('/employees') || path === '/');
+      document.getElementById('nav-leaves').classList.toggle('active', path.startsWith('/leaves'));
+    }
+
+    // login form handler
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var email = document.getElementById('email').value;
+      var password = document.getElementById('password').value;
+      var errorEl = document.getElementById('login-error');
+
+      var user = MOCK_USERS.find(function(u) {
+        return u.email === email && u.password === password;
+      });
+
+      if(user) {
+        errorEl.style.display = 'none';
+        setAuthUser({name: user.name, role: user.role, email: user.email, initials: user.initials});
+        showApp();
+        // navigate to employees by default after login
+        history.pushState(null, '', '/employees');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } else {
+        errorEl.style.display = 'block';
+      }
+    });
+
+    // logout handler
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      clearAuth();
+      showLogin();
+      history.pushState(null, '', '/');
+    });
+
+    // listen for url changes to update active nav
+    window.addEventListener('popstate', function() { updateActiveNav(); });
+
+    // intercept internal link clicks for no refresh navigation
+    document.addEventListener('click', function(event) {
+      var anchor = event.target.closest('a');
+      if(anchor && anchor.getAttribute('href') && anchor.getAttribute('href').startsWith('/')) {
+        event.preventDefault();
+        history.pushState(null, '' , anchor.getAttribute('href'));
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
+    });
+
+    // on page load: check if already logged in
+    if(getAuthUser()) {
+      showApp();
+    }
+  </script>
+
   <script>
     window.importMapInjector.initPromise.then(() => {
       import('@people-hub/root-config');
