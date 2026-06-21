@@ -18,7 +18,7 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular/build:application",
+          "builder": "@angular-builders/custom-webpack:browser",
           "options": {
             "browser": "src/main.ts",
             "polyfills": [
@@ -34,7 +34,14 @@
             ],
             "styles": [
               "src/styles.scss"
-            ]
+            ],
+            "main": "src/main.single-spa.ts",
+            "customWebpackConfig": {
+              "path": "extra-webpack.config.js",
+              "libraryName": "peoplehub-leave-app",
+              "libraryTarget": "umd"
+            },
+            "deployUrl": "http://localhost:4202/"
           },
           "configurations": {
             "production": {
@@ -50,18 +57,19 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "none"
             },
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "outputHashing": "none"
             }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular/build:dev-server",
+          "builder": "@angular-builders/custom-webpack:dev-server",
           "configurations": {
             "production": {
               "buildTarget": "peoplehub-leave-app:build:production"
