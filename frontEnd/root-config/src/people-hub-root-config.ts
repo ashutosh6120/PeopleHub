@@ -8,7 +8,7 @@ import microfrontendLayout from "./microfrontend-layout.html";
 
 declare const System: {
   import: (moduleName: string) => Promise<any>;
-}
+};
 
 const routes = constructRoutes(microfrontendLayout);
 const applications = constructApplications({
