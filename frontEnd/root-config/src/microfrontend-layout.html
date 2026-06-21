@@ -18,8 +18,14 @@
   -->
 
   <main>
+    <route path="employees">
+      <application name="@people-hub/peoplehub-employee-app"></application>
+    </route>
+    <route path="leaves">
+      <application name="@people-hub/peoplehub-leave-app"></application>
+    </route>
     <route default>
-      <application name="@single-spa/welcome"></application>
+      <application name="@people-hub/peoplehub-employee-app"></application>
     </route>
   </main>
 </single-spa-router>

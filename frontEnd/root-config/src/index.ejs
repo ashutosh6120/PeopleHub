@@ -35,6 +35,18 @@
   </script>
   <% } %>
 
+  <script src="https://unpkg.com/systemjs/dist/system.js"></script>
+  <script src="https://unpkg.com/zone.js"></script>
+
+  <script type="systemjs-importmap">
+    {
+      "imports": {
+        "@people-hub/peoplehub-employee-app": "//localhost:4201/main.js",
+        "@people-hub/peoplehub-leave-app": "//localhost:4202/main.js"
+      }
+    }
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/import-map-overrides@5.1.1/dist/import-map-overrides.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@single-spa/import-map-injector@2.0.1/lib/import-map-injector.js"></script>
 </head>

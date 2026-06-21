@@ -6,11 +6,15 @@ import {
 } from "single-spa-layout";
 import microfrontendLayout from "./microfrontend-layout.html";
 
+declare const System: {
+  import: (moduleName: string) => Promise<any>;
+}
+
 const routes = constructRoutes(microfrontendLayout);
 const applications = constructApplications({
   routes,
   loadApp({ name }) {
-    return import(/* webpackIgnore: true */ name);
+    return System.import(name);
   },
 });
 const layoutEngine = constructLayoutEngine({ routes, applications });
