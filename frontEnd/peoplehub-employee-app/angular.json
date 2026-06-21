@@ -20,7 +20,8 @@
         "build": {
           "builder": "@angular-builders/custom-webpack:browser",
           "options": {
-            "browser": "src/main.ts",
+            "outputPath": "dist/peoplehub-employee-app",
+            "index": "src/index.html",
             "polyfills": [
               "zone.js"
             ],
