@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Employee } from '../../interfaces/employee';
 import { EmployeeService } from '../../services/employee';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-employee-form',
@@ -11,10 +12,16 @@ import { ActivatedRoute, Router } from '@angular/router';
   templateUrl: './employee-form.html',
   styleUrl: './employee-form.scss',
 })
-export class EmployeeForm implements OnInit{
+export class EmployeeForm implements OnInit, OnDestroy {
   isEditMode = false;
-  employeeId: number | null = null;
+  employeeId: string | null = null;
   departments: string[] = ['HR', 'Engineering', 'Finance', 'Marketing', 'Operations'];
+  isLoading = false;
+  isSaving = false;
+  errorMessage = '';
+  validationMessage = '';
+
+  private subscription = new Subscription();
 
   formData = {
     name: '',
@@ -28,16 +35,28 @@ export class EmployeeForm implements OnInit{
   constructor(
     private employeeService: EmployeeService,
     private router: Router,
-    private route: ActivatedRoute
-  ) {  }
+    private route: ActivatedRoute,
+  ) {}
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
-    if(id) {
+    if (id) {
       this.isEditMode = true;
-      this.employeeId = +id;
-      const employee = this.employeeService.getEmployeeById(this.employeeId);
-      if(employee) {
+      this.employeeId = id;
+      this.loadEmployee(id);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+  }
+
+  private loadEmployee(id: string): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    const employeeSub = this.employeeService.getEmployeeById(id).subscribe({
+      next: (employee: Employee) => {
         this.formData = {
           name: employee.name,
           email: employee.email,
@@ -46,24 +65,52 @@ export class EmployeeForm implements OnInit{
           department: employee.department,
           joiningDate: employee.joiningDate,
         };
-      }
-    }
+        this.isLoading = false;
+      },
+      error: (error: { error?: { message?: string } }) => {
+        this.errorMessage = error?.error?.message || 'Failed to load employee details';
+        this.isLoading = false;
+      },
+    });
+
+    this.subscription.add(employeeSub);
   }
 
-  onSave() {
-    if(!this.formData.name || !this.formData.email || !this.formData.department) {
+  onSave(): void {
+    this.validationMessage = '';
+    this.errorMessage = '';
+
+    if (!this.formData.name || !this.formData.email || !this.formData.department) {
+      this.validationMessage = 'Name, email, and department are required.';
       return;
     }
 
-    if(this.isEditMode && this.employeeId) {
-      this.employeeService.updateEmployee(this.employeeId, this.formData as Partial<Employee>);
-    } else {
-      this.employeeService.addEmployee(this.formData as Omit<Employee, 'id'>);
-    }
-    this.router.navigate(['/']);
+    this.isSaving = true;
+
+    const request$ =
+      this.isEditMode && this.employeeId
+        ? this.employeeService.updateEmployee(this.employeeId, this.formData as Partial<Employee>)
+        : this.employeeService.addEmployee(this.formData as Omit<Employee, 'id'>);
+
+    const saveSub = request$.subscribe({
+      next: () => {
+        this.isSaving = false;
+        this.router.navigate(['/']);
+      },
+      error: (error: { error?: { message?: string } }) => {
+        this.errorMessage = error?.error?.message || 'Failed to save employee';
+        this.isSaving = false;
+      },
+    });
+
+    this.subscription.add(saveSub);
   }
 
-  onCancel() {
+  onCancel(): void {
+    if (this.isSaving) {
+      return;
+    }
+
     this.router.navigate(['/']);
   }
 }
