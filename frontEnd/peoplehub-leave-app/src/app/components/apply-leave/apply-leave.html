@@ -4,11 +4,24 @@
     <h1>Apply for Leave</h1>
   </div>
 
+  @if (errorMessage) {
+    <div class="message message-error">
+      <strong>Error:</strong> {{ errorMessage }}
+    </div>
+  }
+
+  @if (isLoadingProfile) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading your profile...</p>
+    </div>
+  } @else {
+
   <div class="form-card">
     <form [formGroup]="form">
       <div class="form-group">
         <label for="leave-type">Leave Type</label>
-        <select id="leave-type" formControlName="type">
+        <select id="leave-type" formControlName="type" [disabled]="isSubmitting">
           <option value="" disabled>Select leave type</option>
           @for (leaveType of leaveTypes; track leaveType) {
             <option [value]="leaveType">{{ leaveType }}</option>
@@ -22,14 +35,14 @@
       <div class="form-row">
         <div class="form-group">
           <label for="from-date">From Date</label>
-          <input type="date" id="from-date" formControlName="fromDate" />
+          <input type="date" id="from-date" formControlName="fromDate" [disabled]="isSubmitting" />
           @if (form.get('fromDate')?.invalid && form.get('fromDate')?.touched) {
             <span class="error-text">From date is required</span>
           }
         </div>
         <div class="form-group">
           <label for="to-date">To Date</label>
-          <input type="date" id="to-date" formControlName="toDate" />
+          <input type="date" id="to-date" formControlName="toDate" [disabled]="isSubmitting" />
           @if (form.get('toDate')?.invalid && form.get('toDate')?.touched) {
             <span class="error-text">To date is required</span>
           }
@@ -46,7 +59,7 @@
 
       <div class="form-group">
         <label for="reason">Reason</label>
-        <textarea id="reason" rows="4" formControlName="reason" placeholder="Briefly describe the reason for your leave..."></textarea>
+        <textarea id="reason" rows="4" formControlName="reason" placeholder="Briefly describe the reason for your leave..." [disabled]="isSubmitting"></textarea>
         @if (form.get('reason')?.invalid && form.get('reason')?.touched) {
           <span class="error-text">
             @if (form.get('reason')?.hasError('required')) {
@@ -59,9 +72,12 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn-cancel" (click)="onCancel()">Cancel</button>
-        <button type="button" class="btn-submit" [disabled]="!isFormValid()" (click)="onSubmit()">Submit Request</button>
+        <button type="button" class="btn-cancel" (click)="onCancel()" [disabled]="isSubmitting">Cancel</button>
+        <button type="button" class="btn-submit" [disabled]="!isFormValid()" (click)="onSubmit()">
+          {{ isSubmitting ? 'Submitting...' : 'Submit Request' }}
+        </button>
       </div>
     </form>
   </div>
+  }
 </div>

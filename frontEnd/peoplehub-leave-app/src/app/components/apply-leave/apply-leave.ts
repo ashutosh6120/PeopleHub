@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { LeaveRequestService } from '../../services/leave-request';
+import { Subscription } from 'rxjs';
+import { EmployeeLeaveProfile } from '../../interfaces/leave.request.interface';
 
 @Component({
   selector: 'app-apply-leave',
@@ -10,16 +12,19 @@ import { LeaveRequestService } from '../../services/leave-request';
   templateUrl: './apply-leave.html',
   styleUrl: './apply-leave.scss',
 })
-export class ApplyLeaveComponent implements OnInit{
+export class ApplyLeaveComponent implements OnInit, OnDestroy {
   leaveTypes = ['Sick Leave', 'Casual Leave', 'Earned Leave'];
   form: FormGroup;
   calculatedDays = 0;
+  isLoadingProfile = false;
   isSubmitting = false;
+  errorMessage = '';
 
-  private employeeId = 0;
+  private employeeId: string | number = '';
   private employeeName = '';
   private employeeInitials = '';
   private avatarColor = '#1976D2';
+  private subscription = new Subscription();
 
   constructor(
     private router: Router,
@@ -41,14 +46,38 @@ export class ApplyLeaveComponent implements OnInit{
       return;
     }
 
-    const profile = this.leaveRequestService.getEmployeeProfileByName(user.name);
-    this.employeeId = profile.employeeId;
-    this.employeeName = profile.employeeName;
-    this.employeeInitials = profile.employeeInitials;
-    this.avatarColor = profile.avatarColor;
+    this.isLoadingProfile = true;
+    this.errorMessage = '';
 
-    this.form.get('fromDate')?.valueChanges.subscribe(() => this.calculateDays());
-    this.form.get('toDate')?.valueChanges.subscribe(() => this.calculateDays());
+    const profileSub = this.leaveRequestService.getEmployeeProfileByName(user.name).subscribe({
+      next: (profile: EmployeeLeaveProfile) => {
+        this.employeeId = profile.employeeId;
+        this.employeeName = profile.employeeName;
+        this.employeeInitials = profile.employeeInitials;
+        this.avatarColor = profile.avatarColor;
+        this.isLoadingProfile = false;
+      },
+      error: (error: { error?: { message?: string } }) => {
+        this.errorMessage = error?.error?.message || 'Failed to load employee profile';
+        this.isLoadingProfile = false;
+      },
+    });
+
+    this.subscription.add(profileSub);
+
+    const fromDateSub = this.form.get('fromDate')?.valueChanges.subscribe(() => this.calculateDays());
+    const toDateSub = this.form.get('toDate')?.valueChanges.subscribe(() => this.calculateDays());
+
+    if (fromDateSub) {
+      this.subscription.add(fromDateSub);
+    }
+    if (toDateSub) {
+      this.subscription.add(toDateSub);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
   }
 
   calculateDays(): void {
@@ -73,10 +102,13 @@ export class ApplyLeaveComponent implements OnInit{
   }
 
   isFormValid(): boolean {
-    return this.form.valid && this.calculatedDays > 0;
+    return this.form.valid && this.calculatedDays > 0 && !this.isSubmitting && !this.isLoadingProfile;
   }
 
   onCancel(): void {
+    if (this.isSubmitting) {
+      return;
+    }
     this.router.navigate(['/']);
   }
 
@@ -86,8 +118,10 @@ export class ApplyLeaveComponent implements OnInit{
     }
 
     const formValues = this.form.value;
+    this.isSubmitting = true;
+    this.errorMessage = '';
 
-    this.leaveRequestService.addRequest({
+    const createLeaveSub = this.leaveRequestService.addRequest({
       employeeId: this.employeeId,
       employeeName: this.employeeName,
       employeeInitials: this.employeeInitials,
@@ -97,8 +131,17 @@ export class ApplyLeaveComponent implements OnInit{
       toDate: formValues.toDate,
       days: this.calculatedDays,
       reason: formValues.reason.trim(),
+    }).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+        this.router.navigate(['/']);
+      },
+      error: (error: { error?: { message?: string } }) => {
+        this.errorMessage = error?.error?.message || 'Failed to submit leave request';
+        this.isSubmitting = false;
+      },
     });
 
-    this.router.navigate(['/']);
+    this.subscription.add(createLeaveSub);
   }
 }
