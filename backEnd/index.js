@@ -42,8 +42,7 @@ connectDB(env.mongoUri);
 
 // server start
 app.listen(env.port, () => {
-    console.log(`\n server started running on port http:localhost:${env.port}`);
-
+    console.log(`\nserver started on http://localhost:${env.port}`);
 });
 
 module.exports = app;

@@ -35,7 +35,7 @@ const leaveSchema = new mongoose.Schema({
   },
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee',
+    ref: 'User',
     sparse: true
   },
   approvedDate: {

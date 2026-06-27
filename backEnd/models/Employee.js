@@ -15,7 +15,7 @@ const employeeSchema = new mongoose.Schema({
         type: String,
         required: [true, 'phone no is required']
     },
-    departments: {
+    department: {
         type: String,
         enum: ['Engineering', 'Sales', 'HR', 'Finance', 'Operations', 'Marketing'],
         required: [true, 'department is required']

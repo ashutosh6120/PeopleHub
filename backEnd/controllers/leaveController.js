@@ -1,5 +1,6 @@
 const Leave = require('../models/Leave.js');
 const Employee = require('../models/Employee.js');
+const mongoose = require('mongoose');
 
 exports.getLeaves = async (req, res, next) => {
   try {
@@ -136,7 +137,7 @@ exports.getLeaveBalance = async (req, res, next) => {
     const balances = await Leave.aggregate([
       {
         $match: {
-          employee: require('mongoose').Types.ObjectId(employeeId),
+          employee: new mongoose.Types.ObjectId(employeeId),
           status: 'Approved'
         }
       },
