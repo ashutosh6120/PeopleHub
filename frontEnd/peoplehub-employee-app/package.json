@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "build:single-spa:peoplehub-employee-app": "ng build peoplehub-employee-app --configuration production",
-    "serve:single-spa:peoplehub-employee-app": "ng s --project peoplehub-employee-app --disable-host-check --port 4201 --live-reload false"
+    "start-spa-employee": "ng s --project peoplehub-employee-app --disable-host-check --port 4201 --live-reload false"
   },
   "prettier": {
     "printWidth": 100,

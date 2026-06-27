@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "build:single-spa:peoplehub-leave-app": "ng build peoplehub-leave-app --configuration production",
-    "serve:single-spa:peoplehub-leave-app": "ng s --project peoplehub-leave-app --disable-host-check --port 4202 --live-reload false"
+    "start-spa-leave": "ng s --project peoplehub-leave-app --disable-host-check --port 4202 --live-reload false"
   },
   "prettier": {
     "printWidth": 100,
