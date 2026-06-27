@@ -115,9 +115,14 @@ exports.updateLeaveStatus = async (req, res, next) => {
 
     await leave.save();
 
+    const populatedLeave = await leave.populate([
+      { path: 'employee', select: 'name email' },
+      { path: 'approvedBy', select: 'name' }
+    ]);
+
     res.json({
       message: `Leave request ${status.toLowerCase()} successfully`,
-      leave: await leave.populate('employee', 'name email').populate('approvedBy', 'name')
+      leave: populatedLeave
     });
   } catch (error) {
     next(error);
