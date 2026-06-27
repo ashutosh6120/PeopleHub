@@ -172,14 +172,14 @@
           <label for="password">Password</label>
           <input type="password" id="password" placeholder="*******" required>
         </div>
-        <button type="submit" class="login-btn">Sign In</button>
+        <button type="submit" class="login-btn" id="login-btn">Sign In</button>
         <p class="login-error" id="login-error">Invalid email or password</p>
       </form>
 
       <div class="demo-credentials">
-        <p>DEMO CREDENTIALS</p>
-        <p>Admin: admin@company.com / admin123</p>
-        <p>Employee: james@company.com / james123</p>
+        <p>API LOGIN</p>
+        <p>Use credentials created from the backend auth APIs</p>
+        <p>Example admin: admin@company.com / admin123</p>
       </div>
     </div>
   </div>
@@ -212,11 +212,28 @@
   </div>
 
   <script>
-    // Auth logic -  temporary for now mock users until api is ready
-    var MOCK_USERS = [
-      { email: 'admin@company.com', password: 'admin123', name: 'Choi Mina Sue', role: 'Admin', initials: 'CM'},
-      { email: 'ashu@company.com', password: 'ashu123', name: 'Ashu Chen', role: 'Employee', initials: 'AC'}
-    ];
+    var API_BASE_URL = 'http://localhost:5000/api';
+
+    function formatRole(role) {
+      if (!role) {
+        return 'Employee';
+      }
+
+      return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+    }
+
+    function getInitials(name) {
+      if (!name) {
+        return 'NA';
+      }
+
+      return name
+        .split(' ')
+        .filter(Boolean)
+        .map(function(part) { return part.charAt(0).toUpperCase(); })
+        .slice(0, 2)
+        .join('');
+    }
 
     function getAuthUser() {
       var stored = localStorage.getItem('hr_portal_user');
@@ -229,6 +246,16 @@
 
     function clearAuth() {
       localStorage.removeItem('hr_portal_user');
+    }
+
+    function setLoginState(isLoading) {
+      var button = document.getElementById('login-btn');
+      if (!button) {
+        return;
+      }
+
+      button.disabled = isLoading;
+      button.textContent = isLoading ? 'Signing In...' : 'Sign In';
     }
 
     function showApp() {
@@ -260,25 +287,52 @@
     }
 
     // login form handler
-    document.getElementById('login-form').addEventListener('submit', function(e) {
+    document.getElementById('login-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       var email = document.getElementById('email').value;
       var password = document.getElementById('password').value;
       var errorEl = document.getElementById('login-error');
 
-      var user = MOCK_USERS.find(function(u) {
-        return u.email === email && u.password === password;
-      });
+      errorEl.style.display = 'none';
+      setLoginState(true);
 
-      if(user) {
-        errorEl.style.display = 'none';
-        setAuthUser({name: user.name, role: user.role, email: user.email, initials: user.initials});
+      try {
+        var response = await fetch(API_BASE_URL + '/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password
+          })
+        });
+
+        var data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+
+        var loggedInUser = {
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: formatRole(data.user.role),
+          apiRole: data.user.role,
+          initials: getInitials(data.user.name),
+          token: data.token
+        };
+
+        setAuthUser(loggedInUser);
         showApp();
-        // navigate to employees by default after login
         history.pushState(null, '', '/employees');
         window.dispatchEvent(new PopStateEvent('popstate'));
-      } else {
+      } catch (error) {
+        errorEl.textContent = error.message || 'Invalid email or password';
         errorEl.style.display = 'block';
+      } finally {
+        setLoginState(false);
       }
     });
 
