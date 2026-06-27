@@ -1,10 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const mongoose = require('mongoose');
+const env = require('./config/env.js');
+const connectDB = require('./config/db.js');
 
-// load environment variables
-dotenv.config();
 
 const authRoutes = require('./routes/auth.js');
 const employeeRoutes = require('./routes/employees.js');
@@ -13,11 +11,10 @@ const leaveRoutes = require('./routes/leaves.js');
 const errorHandler = require('./middleware/errorHandler.js');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:9000',
+    origin: env.corsOrigin,
     credentials: true
 }));
 app.use(express.json());
@@ -33,22 +30,19 @@ app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/leaves', leaveRoutes);
 
+app.use((req, res) => {
+    res.status(404).json({ error: 'route not found' });
+});
+
 // use error handle for middleware
 app.use(errorHandler);
 
 // database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/peoplehub')
-    .then(() => {
-        console.log('mongodb connected success');
-    })
-    .catch((err) => {
-        console.error('mongodb connection error', err.message);
-        process.exit(1);
-    });
+connectDB(env.mongoUri);
 
 // server start
-app.listen(PORT, () => {
-    console.log(`\n server started running on port http:localhost:${PORT}`);
+app.listen(env.port, () => {
+    console.log(`\n server started running on port http:localhost:${env.port}`);
 
 });
 
