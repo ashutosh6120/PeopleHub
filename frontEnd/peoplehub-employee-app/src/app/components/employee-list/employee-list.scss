@@ -1,0 +1,108 @@
+.employee-directory {
+  padding: 24px 32px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+.search-box {
+  position: relative;
+
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+  }
+
+  input {
+    padding: 10px 16px 10px 36px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 260px;
+    outline: none;
+
+    &:focus {
+      border-color: #1976D2;
+    }
+  }
+}
+
+.btn-add {
+  background: #1976D2;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    background: #1565C0;
+  }
+}
+
+// AG Grid overrides
+.ag-header-cell-text {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.ag-cell {
+  display: flex;
+  align-items: center;
+}
+
+.action-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid;
+}
+
+.btn-view {
+  background: #e3f2fd;
+  color: #1976D2;
+  border-color: #bbdefb;
+
+  &:hover { background: #bbdefb; }
+}
+
+.btn-edit {
+  background: #f5f5f5;
+  color: #333;
+  border-color: #e0e0e0;
+
+  &:hover { background: #e0e0e0; }
+}
+
+.btn-delete {
+  background: #ffebee;
+  color: #D32F2F;
+  border-color: #ffcdd2;
+
+  &:hover { background: #ffcdd2; }
+}

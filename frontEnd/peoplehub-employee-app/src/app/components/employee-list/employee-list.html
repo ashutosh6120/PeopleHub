@@ -1,0 +1,34 @@
+<div class="employee-directory">
+  <div class="header">
+    <h1>Employee Directory</h1>
+    <div class="header-actions">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          placeholder="Search by name or department..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearch()"
+        />
+      </div>
+      @if (isAdmin) {
+        <button class="btn-add" (click)="onAdd()">+ Add Employee</button>
+      }
+    </div>
+  </div>
+
+  <ag-grid-angular
+    [theme]="theme"
+    [rowData]="employees"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="defaultColDef"
+    [pagination]="true"
+    [paginationPageSize]="10"
+    [paginationPageSizeSelector]="[10, 20, 50]"
+    [domLayout]="'autoHeight'"
+    [rowHeight]="56"
+    [headerHeight]="48"
+  />
+
+  <app-delete-confirm-dialog (confirmDelete)="onConfirmDelete($event)" />
+</div>
