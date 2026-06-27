@@ -26,7 +26,7 @@ exports.register = async (req, res, next) => {
             role: value.role
         });
 
-        await User.save();
+        await user.save();
 
         // generate token
         const token = generateToken(user);

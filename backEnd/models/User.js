@@ -36,13 +36,7 @@ userSchema.pre('save', async function(next) {
     if(!this.isModified('password')) {
         next();
     }
-
-    try {
-        this.password = await hashPassword(this.password);
-        next();
-    } catch (error) {
-        next(error);
-    }
+    this.password = await hashPassword(this.password);
 });
 
 module.exports = mongoose.model('User', userSchema);
