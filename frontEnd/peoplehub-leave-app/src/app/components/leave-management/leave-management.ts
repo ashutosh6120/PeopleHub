@@ -103,7 +103,7 @@ export class LeaveManagementComponent {
  }
 
  showAllRequests(): void {
- history.pushState(null, '', '/app2');
+ history.pushState(null, '', '/leaves');
  window.dispatchEvent(new PopStateEvent('popstate'));
  }
 

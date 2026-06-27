@@ -55,7 +55,7 @@ export class EmployeeProfile {
     }
 
     const employeeName = encodeURIComponent(this.employee.name);
-    const targetPath = `/app2?employeeId=${this.employee.id}&employeeName=${employeeName}`;
+    const targetPath = `/leaves?employeeId=${this.employee.id}&employeeName=${employeeName}`;
     history.pushState(null, '', targetPath);
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
