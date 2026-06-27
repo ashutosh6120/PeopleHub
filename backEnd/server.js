@@ -6,6 +6,10 @@ const mongoose = require('mongoose');
 // load environment variables
 dotenv.config();
 
+const authRoutes = require('./routes/auth.js');
+const employeeRoutes = require('./routes/employees.js');
+const leaveRoutes = require('./routes/leaves.js');
+
 const errorHandler = require('./middleware/errorHandler.js');
 
 const app = express();
@@ -18,6 +22,16 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'OK', message: 'server is running' });
+});
+
+// api routes
+app.use('/api/auth', authRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/leaves', leaveRoutes);
 
 // use error handle for middleware
 app.use(errorHandler);
