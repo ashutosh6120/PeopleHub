@@ -1,198 +1,192 @@
-import { Injectable } from "@angular/core";
-import { LeaveRequest, LeaveStatus, NewLeaveRequestInput } from "../interfaces/leave.request.interface";
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import {
+  BackendLeaveType,
+  EmployeeLeaveProfile,
+  LeaveApiResponse,
+  LeaveBalanceItem,
+  LeaveRequest,
+  LeaveStatus,
+  LeaveType,
+  NewLeaveRequestInput,
+} from '../interfaces/leave.request.interface';
 
 @Injectable({
   providedIn: 'root',
 })
 export class LeaveRequestService {
-  private requests: LeaveRequest[] = [
-    {
-      id: 1,
-      employeeId: 2,
-      employeeName: 'James Chen',
-      employeeInitials: 'JC',
-      avatarColor: '#0f8a7d',
-      type: 'Sick Leave',
-      fromDate: '2024-06-10',
-      toDate: '2024-06-11',
-      days: 2,
-      reason: 'Fever and cold',
-      status: 'Approved',
-    },
-    {
-      id: 2,
-      employeeId: 2,
-      employeeName: 'James Chen',
-      employeeInitials: 'JC',
-      avatarColor: '#0f8a7d',
-      type: 'Casual Leave',
-      fromDate: '2024-07-04',
-      toDate: '2024-07-05',
-      days: 2,
-      reason: 'Family event',
-      status: 'Approved',
-    },
-    {
-      id: 3,
-      employeeId: 2,
-      employeeName: 'James Chen',
-      employeeInitials: 'JC',
-      avatarColor: '#0f8a7d',
-      type: 'Earned Leave',
-      fromDate: '2024-08-20',
-      toDate: '2024-08-25',
-      days: 6,
-      reason: 'Annual vacation',
-      status: 'Approved',
-    },
-    {
-      id: 4,
-      employeeId: 3,
-      employeeName: 'Priya Sharma',
-      employeeInitials: 'PS',
-      avatarColor: '#7e22ce',
-      type: 'Sick Leave',
-      fromDate: '2024-06-15',
-      toDate: '2024-06-15',
-      days: 1,
-      reason: 'Doctor appointment',
-      status: 'Approved',
-    },
-    {
-      id: 5,
-      employeeId: 3,
-      employeeName: 'Priya Sharma',
-      employeeInitials: 'PS',
-      avatarColor: '#7e22ce',
-      type: 'Casual Leave',
-      fromDate: '2024-07-20',
-      toDate: '2024-07-21',
-      days: 2,
-      reason: 'Personal work',
-      status: 'Rejected',
-    },
-    {
-      id: 6,
-      employeeId: 4,
-      employeeName: 'Marcus Thompson',
-      employeeInitials: 'MT',
-      avatarColor: '#dc2626',
-      type: 'Earned Leave',
-      fromDate: '2024-08-01',
-      toDate: '2024-08-07',
-      days: 5,
-      reason: 'Family trip to Europe',
-      status: 'Pending',
-    },
-    {
-      id: 7,
-      employeeId: 5,
-      employeeName: 'Aisha Patel',
-      employeeInitials: 'AP',
-      avatarColor: '#f97316',
-      type: 'Sick Leave',
-      fromDate: '2024-09-03',
-      toDate: '2024-09-04',
-      days: 2,
-      reason: 'Medical procedure recovery',
-      status: 'Pending',
-    },
-    {
-      id: 8,
-      employeeId: 6,
-      employeeName: 'David Kim',
-      employeeInitials: 'DK',
-      avatarColor: '#2e7d32',
-      type: 'Casual Leave',
-      fromDate: '2024-07-15',
-      toDate: '2024-07-15',
-      days: 1,
-      reason: 'Bank work',
-      status: 'Approved',
-    },
-    {
-      id: 9,
-      employeeId: 7,
-      employeeName: 'Elena Russo',
-      employeeInitials: 'ER',
-      avatarColor: '#db2777',
-      type: 'Earned Leave',
-      fromDate: '2024-08-12',
-      toDate: '2024-08-16',
-      days: 5,
-      reason: 'Wedding anniversary trip',
-      status: 'Approved',
-    },
-    {
-      id: 10,
-      employeeId: 8,
-      employeeName: 'Carlos Mendez',
-      employeeInitials: 'CM',
-      avatarColor: '#1976D2',
-      type: 'Sick Leave',
-      fromDate: '2024-07-22',
-      toDate: '2024-07-22',
-      days: 1,
-      reason: 'Dental surgery',
-      status: 'Approved',
-    },
-  ];
+  private leaveApiUrl = 'http://localhost:5001/api/leaves';
+  private employeeApiUrl = 'http://localhost:5001/api/employees';
 
-  getRequests(): LeaveRequest[] {
-    return this.requests.map((item) => ({ ...item }));
+  constructor(private http: HttpClient) {}
+
+  private getAuthToken(): string {
+    const user = (window as Window & { __HR_PORTAL_USER__?: { token?: string } })
+      .__HR_PORTAL_USER__;
+    return user?.token || '';
   }
 
-  addRequest(input: NewLeaveRequestInput): void {
-    const nextId = this.requests.length > 0 ? Math.max(...this.requests.map((item) => item.id)) + 1 : 1;
-    this.requests.unshift({
-      id: nextId,
-      employeeId: input.employeeId,
-      employeeName: input.employeeName,
-      employeeInitials: input.employeeInitials,
-      avatarColor: input.avatarColor,
-      type: input.type,
-      fromDate: input.fromDate,
-      toDate: input.toDate,
-      days: input.days,
-      reason: input.reason,
-      status: 'Pending',
-    });
+  private getHeaders() {
+    return {
+      Authorization: `Bearer ${this.getAuthToken()}`,
+    };
   }
 
-  getEmployeeProfileByName(name: string): {
-    employeeId: number;
-    employeeName: string;
-    employeeInitials: string;
-    avatarColor: string;
-  } {
-    const existing = this.requests.find((item) => item.employeeName === name);
-    if (existing) {
-      return {
-        employeeId: existing.employeeId,
-        employeeName: existing.employeeName,
-        employeeInitials: existing.employeeInitials,
-        avatarColor: existing.avatarColor,
-      };
-    }
-
-    const initials = name
+  private getInitials(name: string): string {
+    return name
       .split(' ')
       .map((part) => part[0])
       .join('')
       .toUpperCase();
+  }
+
+  private getAvatarColor(name: string): string {
+    const colors = ['#0f8a7d', '#7e22ce', '#dc2626', '#f97316', '#2e7d32', '#db2777', '#1976D2'];
+    return colors[name.charCodeAt(0) % colors.length];
+  }
+
+  private toFrontendLeaveType(type: BackendLeaveType): LeaveType {
+    const typeMap: Record<BackendLeaveType, LeaveType> = {
+      Sick: 'Sick Leave',
+      Casual: 'Casual Leave',
+      Earned: 'Earned Leave',
+    };
+
+    return typeMap[type];
+  }
+
+  private toBackendLeaveType(type: LeaveType): BackendLeaveType {
+    const typeMap: Record<LeaveType, BackendLeaveType> = {
+      'Sick Leave': 'Sick',
+      'Casual Leave': 'Casual',
+      'Earned Leave': 'Earned',
+    };
+
+    return typeMap[type];
+  }
+
+  private mapLeaveRequest(leave: LeaveApiResponse): LeaveRequest {
+    const employeeName = leave.employee?.name || 'Unknown Employee';
 
     return {
-      employeeId: 999,
-      employeeName: name,
-      employeeInitials: initials,
-      avatarColor: '#1976D2',
+      id: leave._id,
+      employeeId: leave.employee?._id || leave.employee?.id || '',
+      employeeName,
+      employeeInitials: this.getInitials(employeeName),
+      avatarColor: this.getAvatarColor(employeeName),
+      type: this.toFrontendLeaveType(leave.leaveType),
+      fromDate: leave.startDate,
+      toDate: leave.endDate,
+      days: leave.numberOfDays,
+      reason: leave.reason,
+      status: leave.status,
     };
   }
 
-  updateStatus(id: number, status: LeaveStatus): void {
-    const target = this.requests.find((item) => item.id === id);
-    if (target) {
-      target.status = status;
+  getRequests(
+    status?: LeaveStatus,
+    employeeId?: string | number,
+    page: number = 1,
+    limit: number = 100,
+  ): Observable<LeaveRequest[]> {
+    let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString());
+
+    if (status) {
+      params = params.set('status', status);
     }
+
+    if (employeeId) {
+      params = params.set('employeeId', String(employeeId));
+    }
+
+    return this.http
+      .get(this.leaveApiUrl, {
+        params,
+        headers: this.getHeaders(),
+      })
+      .pipe(
+        map((response: any) => response.leaves.map((leave: any) => this.mapLeaveRequest(leave))),
+      );
+  }
+
+  addRequest(input: NewLeaveRequestInput): Observable<LeaveRequest> {
+    return this.http
+      .post<{ leave: LeaveApiResponse }>(
+        this.leaveApiUrl,
+        {
+          employeeId: input.employeeId,
+          leaveType: this.toBackendLeaveType(input.type),
+          startDate: input.fromDate,
+          endDate: input.toDate,
+          numberOfDays: input.days,
+          reason: input.reason,
+        },
+        {
+          headers: this.getHeaders(),
+        },
+      )
+      .pipe(map((response) => this.mapLeaveRequest(response.leave)));
+  }
+
+  getEmployeeProfileByName(name: string): Observable<EmployeeLeaveProfile> {
+    const params = new HttpParams().set('search', name).set('page', '1').set('limit', '100');
+
+    return this.http
+      .get(this.employeeApiUrl, {
+        params,
+        headers: this.getHeaders(),
+      })
+      .pipe(
+        map((response: any) => {
+          const matchedEmployee =
+            response.employees.find(
+              (employee: any) => employee.name.toLowerCase() === name.toLowerCase(),
+            ) || response.employees[0];
+
+          return {
+            employeeId: matchedEmployee?._id || '',
+            employeeName: matchedEmployee?.name || name,
+            employeeInitials: this.getInitials(matchedEmployee?.name || name),
+            avatarColor: this.getAvatarColor(matchedEmployee?.name || name),
+          };
+        }),
+      );
+  }
+
+  updateStatus(id: string | number, status: LeaveStatus): Observable<LeaveRequest> {
+    return this.http
+      .put<{ leave: LeaveApiResponse }>(
+        `${this.leaveApiUrl}/${id}`,
+        {
+          status,
+        },
+        {
+          headers: this.getHeaders(),
+        },
+      )
+      .pipe(map((response) => this.mapLeaveRequest(response.leave)));
+  }
+
+  getLeaveBalance(employeeId: string | number): Observable<LeaveBalanceItem[]> {
+    return this.http
+      .get(`${this.leaveApiUrl}/balance/${employeeId}`, {
+        headers: this.getHeaders(),
+      })
+      .pipe(
+        map((response: any) =>
+          (Object.keys(response.entitlements) as BackendLeaveType[]).map((type) => {
+            const total = response.entitlements[type];
+            const remaining = response.balance[type] ?? total;
+
+            return {
+              type: this.toFrontendLeaveType(type),
+              remaining,
+              total,
+              progressPct: total > 0 ? Math.round((remaining / total) * 100) : 0,
+            };
+          }),
+        ),
+      );
   }
 }
