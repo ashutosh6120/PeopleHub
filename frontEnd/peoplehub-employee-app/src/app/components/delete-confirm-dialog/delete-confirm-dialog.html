@@ -1,0 +1,18 @@
+@if(deleteDialog.state().isOpen) {
+    <div class="delete-overlay" (click)="onCancel()">
+        <div class="delete-modal" (click)="$event.stopPropagation()">
+            <div class="delete-header">
+                <span class="delete-icon">🗑️</span>
+                <h3>Confirm Delete</h3>
+            </div>
+            <p>
+                Are you sure you want to delete {{deleteDialog.state().employeeName }}?
+                This action cannot be undone
+            </p>
+            <div class="delete-actions">
+                <button type="button" class="btn-cancel" (click)="onCancel()">Cancel</button>
+                <button type="button" class="btn-confirm" (click)="onConfirm()">Delete</button>
+            </div>
+        </div>
+    </div>
+}
