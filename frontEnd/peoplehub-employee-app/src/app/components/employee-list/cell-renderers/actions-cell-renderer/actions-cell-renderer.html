@@ -1,0 +1,5 @@
+<div class="action-buttons">
+    <button class="action-btn btn-view" (click)="onView()">👁️‍🗨️ View</button>
+    <button *ngIf="isAdmin" class="action-btn btn-edit" (click)="onEdit()">✎ Edit</button>
+    <button *ngIf="isAdmin" class="action-btn btn-delete" (click)="onDelete()">🗑️ Delete</button>
+</div>
