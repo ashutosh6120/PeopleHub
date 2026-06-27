@@ -1,0 +1,146 @@
+.profile-page {
+    padding: 22px 30px;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+
+    h1 {
+        margin: 0;
+        font-size: 28px;
+        font-weight: 700;
+        color: #111827;
+    }
+}
+
+.btn-back {
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.profile-card {
+    max-width: 920px;
+    background: #ffffff;
+    border: 1px solid #d9dee7;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
+}
+
+.card-banner {
+    height: 84px;
+    background: #dbe3ef;
+}
+
+.avatar {
+    width: 74px;
+    height: 74px;
+    border-radius: 999px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    font-weight: 700;
+    border: 3px solid #ffffff;
+    margin-left: 24px;
+    margin-top: -36px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+}
+
+.profile-body {
+    padding: 14px 20px 20px;
+
+    h2 {
+        margin: 8px 0 4px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #111827;
+    }
+}
+
+.subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+
+    span {
+        color: #1d4ed8;
+        font-weight: 600;
+    }
+}
+
+.info-grid {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.info-item {
+    border: 1px solid #d9dee7;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #f8fafc;
+
+    label {
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    p {
+        margin: 0;
+        font-size: 16px;
+        color: #1f2937;
+        font-weight: 600;
+    }
+}
+
+.actions {
+    margin-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 14px;
+}
+
+.btn-history {
+    border: 2px solid #1d72e8;
+    background: #f8fbff;
+    color: #1d72e8;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .profile-page {
+        padding: 16px;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-body h2 {
+        font-size: 20px;
+    }
+
+    .subtitle,
+    .info-item p,
+    .btn-history,
+    .page-header h1 {
+        font-size: 14px;
+    }
+}

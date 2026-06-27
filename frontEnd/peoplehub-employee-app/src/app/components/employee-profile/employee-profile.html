@@ -1,0 +1,38 @@
+<div class="profile-page">
+    <div class="page-header">
+        <button class="btn-back" (click)="onBack()">←</button>
+        <h1>Employee Profile</h1>
+    </div>
+
+    <div class="profile-card" *ngIf="employee as emp">
+        <div class="card-banner"></div>
+
+        <div class="avatar" [style.background]="avatarColor">
+            {{ initials }}
+        </div>
+
+        <div class="profile-body">
+            <h2>{{ emp.name }}</h2>
+            <p class="subtitle">{{ emp.position }} · <span>{{ emp.department }}</span></p>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Email</label>
+                    <p>{{ emp.email }}</p>
+                </div>
+                <div class="info-item">
+                    <label>Phone</label>
+                    <p>{{ emp.phone }}</p>
+                </div>
+                <div class="info-item">
+                    <label>Joined</label>
+                    <p>{{ emp.joiningDate | date : 'MMM d, y' }}</p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn-history" (click)="onViewLeaveHistory()">📅 View Leave History</button>
+            </div>
+        </div>
+    </div>
+</div>
