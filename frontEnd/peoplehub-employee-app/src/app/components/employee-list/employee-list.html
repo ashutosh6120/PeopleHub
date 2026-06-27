@@ -9,26 +9,40 @@
           placeholder="Search by name or department..."
           [(ngModel)]="searchTerm"
           (ngModelChange)="onSearch()"
+          [disabled]="isLoading"
         />
       </div>
       @if (isAdmin) {
-        <button class="btn-add" (click)="onAdd()">+ Add Employee</button>
+        <button class="btn-add" (click)="onAdd()" [disabled]="isLoading">+ Add Employee</button>
       }
     </div>
   </div>
 
-  <ag-grid-angular
-    [theme]="theme"
-    [rowData]="employees"
-    [columnDefs]="columnDefs"
-    [defaultColDef]="defaultColDef"
-    [pagination]="true"
-    [paginationPageSize]="10"
-    [paginationPageSizeSelector]="[10, 20, 50]"
-    [domLayout]="'autoHeight'"
-    [rowHeight]="56"
-    [headerHeight]="48"
-  />
+  @if (errorMessage) {
+    <div class="error-message">
+      <strong>Error:</strong> {{ errorMessage }}
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Loading employees...</p>
+    </div>
+  } @else {
+    <ag-grid-angular
+      [theme]="theme"
+      [rowData]="employees"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="defaultColDef"
+      [pagination]="true"
+      [paginationPageSize]="10"
+      [paginationPageSizeSelector]="[10, 20, 50]"
+      [domLayout]="'autoHeight'"
+      [rowHeight]="56"
+      [headerHeight]="48"
+    />
+  }
 
   <app-delete-confirm-dialog (confirmDelete)="onConfirmDelete($event)" />
 </div>

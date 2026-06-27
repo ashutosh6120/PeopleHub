@@ -1,4 +1,4 @@
-import { Component, ViewEncapsulation } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActionsCellRenderer } from './cell-renderers/actions-cell-renderer/actions-cell-renderer';
 import { DepartmentCellRenderer } from './cell-renderers/department-cell-renderer/department-cell-renderer';
 import { AvatarCellRenderer } from './cell-renderers/avatar-cell-renderer/avatar-cell-renderer';
@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgGridAngular } from 'ag-grid-angular';
 import { DeleteConfirmDialog } from '../delete-confirm-dialog/delete-confirm-dialog';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-employee-list',
@@ -18,10 +19,12 @@ import { DeleteConfirmDialog } from '../delete-confirm-dialog/delete-confirm-dia
   styleUrl: './employee-list.scss',
   encapsulation: ViewEncapsulation.None,
 })
-export class EmployeeList {
+export class EmployeeList implements OnInit, OnDestroy {
   employees: Employee[] = [];
   searchTerm = '';
   isAdmin = false;
+  isLoading = false;
+  errorMessage = '';
 
   columnDefs: ColDef[] = [];
   defaultColDef: ColDef = {
@@ -31,6 +34,8 @@ export class EmployeeList {
     minWidth: 200,
   };
   theme = themeQuartz.withParams({ accentColor: '#1976D2' });
+
+  private subscription: Subscription = new Subscription();
 
   constructor(
     private employeeService: EmployeeService,
@@ -42,6 +47,10 @@ export class EmployeeList {
     this.isAdmin = user?.role === 'Admin';
     this.setupColumns();
     this.loadEmployees();
+  }
+
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
   }
 
   setupColumns(): void {
@@ -80,21 +89,26 @@ export class EmployeeList {
   }
 
   loadEmployees(): void {
-    this.employees = this.employeeService.getEmployees();
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    const loadSub = this.employeeService.getEmployees(this.searchTerm || undefined, 1, 10).subscribe(
+      (response: any) => {
+        this.employees = response.employees;
+        this.isLoading = false;
+      },
+      (error: any) => {
+        this.errorMessage = error?.error?.message || 'Failed to load employees';
+        this.isLoading = false;
+        console.error('Error loading employees:', error);
+      }
+    );
+
+    this.subscription.add(loadSub);
   }
 
   onSearch(): void {
-    const term = this.searchTerm.toLowerCase();
-    if (!term) {
-      this.employees = this.employeeService.getEmployees();
-    } else {
-      this.employees = this.employeeService.getEmployees().filter(emp =>
-        emp.name.toLowerCase().includes(term) ||
-        emp.department.toLowerCase().includes(term) ||
-        emp.email.toLowerCase().includes(term) ||
-        emp.position.toLowerCase().includes(term)
-      );
-    }
+    this.loadEmployees();
   }
 
   onAdd(): void {
@@ -102,7 +116,21 @@ export class EmployeeList {
   }
 
   onConfirmDelete(employeeId: number): void {
-    this.employeeService.deleteEmployee(employeeId);
-    this.loadEmployees();
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    const deleteSub = this.employeeService.deleteEmployee(employeeId).subscribe(
+      () => {
+        this.isLoading = false;
+        this.loadEmployees();
+      },
+      (error: any) => {
+        this.errorMessage = error?.error?.message || 'Failed to delete employee';
+        this.isLoading = false;
+        console.error('Error deleting employee:', error);
+      }
+    );
+
+    this.subscription.add(deleteSub);
   }
 }
