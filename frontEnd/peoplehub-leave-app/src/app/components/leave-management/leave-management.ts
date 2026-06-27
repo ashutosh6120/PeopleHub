@@ -1,8 +1,13 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { Component } from '@angular/core';
-import { LeaveRequest, LeaveStatus } from '../../interfaces/leave.request.interface';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import {
+  EmployeeLeaveProfile,
+  LeaveRequest,
+  LeaveStatus,
+} from '../../interfaces/leave.request.interface';
 import { LeaveRequestService } from '../../services/leave-request';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 type TabKey = 'Pending' | 'Approved' | 'Rejected' | 'All';
 
@@ -13,182 +18,288 @@ type TabKey = 'Pending' | 'Approved' | 'Rejected' | 'All';
   templateUrl: './leave-management.html',
   styleUrl: './leave-management.scss',
 })
-export class LeaveManagementComponent {
+export class LeaveManagementComponent implements OnInit, OnDestroy {
   activeTab: TabKey = 'Pending';
- isAdmin = false;
- currentUserName = '';
- currentUserEmployeeId: number | null = null;
+  isAdmin = false;
+  currentUserName = '';
+  currentUserEmployeeId: string | number | null = null;
 
- filterEmployeeId: number | null = null;
- filterEmployeeName = '';
+  filterEmployeeId: string | null = null;
+  filterEmployeeName = '';
 
- requests: LeaveRequest[] = [];
- visibleRequests: LeaveRequest[] = [];
+  requests: LeaveRequest[] = [];
+  visibleRequests: LeaveRequest[] = [];
 
- toastVisible = false;
- toastMessage = '';
- toastType: 'success' | 'danger' = 'success';
- private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  isLoading = false;
+  isUpdatingStatus = false;
+  errorMessage = '';
 
- constructor(
- private leaveRequestService: LeaveRequestService,
- private route: ActivatedRoute,
- private router: Router,
- private datePipe: DatePipe
- ) {}
+  toastVisible = false;
+  toastMessage = '';
+  toastType: 'success' | 'danger' = 'success';
+  private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  private subscription = new Subscription();
 
- ngOnInit(): void {
- const user = (window as any).__HR_PORTAL_USER__;
- this.isAdmin = user?.role === 'Admin';
- this.currentUserName = user?.name ?? '';
+  constructor(
+    private leaveRequestService: LeaveRequestService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private datePipe: DatePipe,
+  ) {}
 
- if (!this.isAdmin && this.currentUserName) {
- this.currentUserEmployeeId = this.leaveRequestService.getEmployeeProfileByName(this.currentUserName).employeeId;
- }
+  ngOnInit(): void {
+    const user = (window as any).__HR_PORTAL_USER__;
+    this.isAdmin = user?.role === 'Admin';
+    this.currentUserName = user?.name ?? '';
 
- this.route.queryParamMap.subscribe((params) => {
- const employeeIdValue = params.get('employeeId');
- const hasExternalFilter = !!employeeIdValue;
+    const paramsSub = this.route.queryParamMap.subscribe((params) => {
+      const employeeIdValue = params.get('employeeId');
+      const hasExternalFilter = !!employeeIdValue;
 
- this.filterEmployeeId = hasExternalFilter ? Number(employeeIdValue) : null;
- this.filterEmployeeName = hasExternalFilter ? params.get('employeeName') ?? '' : '';
- this.refreshData();
- });
- }
+      this.filterEmployeeId = hasExternalFilter ? employeeIdValue : null;
+      this.filterEmployeeName = hasExternalFilter ? (params.get('employeeName') ?? '') : '';
 
- get isEmployeeMode(): boolean {
- return !this.isAdmin && !this.filterEmployeeId;
- }
+      if (this.isAdmin) {
+        this.refreshData();
+        return;
+      }
 
- get employeeLeaveBalances(): Array<{ type: string; remaining: number; total: number; progressPct: number }> {
- const totals: Record<string, number> = {
- 'Sick Leave': 7,
- 'Casual Leave': 5,
- 'Earned Leave': 15,
- };
+      this.loadCurrentUserProfileAndRefresh();
+    });
 
- const approved = this.requests.filter((item) => item.status === 'Approved');
+    this.subscription.add(paramsSub);
+  }
 
- return ['Sick Leave', 'Casual Leave', 'Earned Leave'].map((type) => {
- const used = approved
- .filter((item) => item.type === type)
- .reduce((sum, item) => sum + item.days, 0);
- const total = totals[type];
- const remaining = Math.max(0, total - used);
- const progressPct = total > 0 ? Math.round((remaining / total) * 100) : 0;
- return { type, remaining, total, progressPct };
- });
- }
+  ngOnDestroy(): void {
+    this.subscription.unsubscribe();
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+      this.toastTimer = null;
+    }
+  }
 
- get tabs(): Array<{ key: TabKey; label: string; count: number }> {
- return [
- { key: 'Pending', label: 'Pending', count: this.getCountByStatus('Pending') },
- { key: 'Approved', label: 'Approved', count: this.getCountByStatus('Approved') },
- { key: 'Rejected', label: 'Rejected', count: this.getCountByStatus('Rejected') },
- { key: 'All', label: 'All', count: this.requests.length },
- ];
- }
+  get isEmployeeMode(): boolean {
+    return !this.isAdmin && !this.filterEmployeeId;
+  }
 
- setTab(tab: TabKey): void {
- this.activeTab = tab;
- this.applyViewFilter();
- }
+  get employeeLeaveBalances(): Array<{
+    type: string;
+    remaining: number;
+    total: number;
+    progressPct: number;
+  }> {
+    const totals: Record<string, number> = {
+      'Sick Leave': 7,
+      'Casual Leave': 5,
+      'Earned Leave': 15,
+    };
 
- clearEmployeeFilter(): void {
- this.router.navigate([], {
- relativeTo: this.route,
- queryParams: {},
- replaceUrl: true,
- });
- }
+    const approved = this.requests.filter((item) => item.status === 'Approved');
 
- showAllRequests(): void {
- history.pushState(null, '', '/leaves');
- window.dispatchEvent(new PopStateEvent('popstate'));
- }
+    return ['Sick Leave', 'Casual Leave', 'Earned Leave'].map((type) => {
+      const used = approved
+        .filter((item) => item.type === type)
+        .reduce((sum, item) => sum + item.days, 0);
+      const total = totals[type];
+      const remaining = Math.max(0, total - used);
+      const progressPct = total > 0 ? Math.round((remaining / total) * 100) : 0;
+      return { type, remaining, total, progressPct };
+    });
+  }
 
- approve(request: LeaveRequest): void {
- this.leaveRequestService.updateStatus(request.id, 'Approved');
- this.refreshData();
- this.showToast('Leave request approved', 'success');
- }
+  get tabs(): Array<{ key: TabKey; label: string; count: number }> {
+    return [
+      { key: 'Pending', label: 'Pending', count: this.getCountByStatus('Pending') },
+      { key: 'Approved', label: 'Approved', count: this.getCountByStatus('Approved') },
+      { key: 'Rejected', label: 'Rejected', count: this.getCountByStatus('Rejected') },
+      { key: 'All', label: 'All', count: this.requests.length },
+    ];
+  }
 
- reject(request: LeaveRequest): void {
- this.leaveRequestService.updateStatus(request.id, 'Rejected');
- this.refreshData();
- this.showToast('Leave request rejected', 'danger');
- }
+  setTab(tab: TabKey): void {
+    this.activeTab = tab;
+    this.applyViewFilter();
+  }
 
- shouldShowActionButtons(): boolean {
- return this.isAdmin && !this.filterEmployeeId && this.activeTab === 'Pending';
- }
+  clearEmployeeFilter(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {},
+      replaceUrl: true,
+    });
+  }
 
- onApplyLeave(): void {
- this.router.navigate(['/apply']);
- }
+  showAllRequests(): void {
+    history.pushState(null, '', '/leaves');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
 
- getStatusClass(status: LeaveStatus): string {
- if (status === 'Approved') {
- return 'status-approved';
- }
- if (status === 'Rejected') {
- return 'status-rejected';
- }
- return 'status-pending';
- }
+  approve(request: LeaveRequest): void {
+    if (this.isUpdatingStatus) {
+      return;
+    }
 
- formatDate(date: string): string {
- return this.datePipe.transform(date, 'MMM d, y') ?? date;
- }
+    this.isUpdatingStatus = true;
+    this.errorMessage = '';
 
- closeToast(): void {
- this.toastVisible = false;
- if (this.toastTimer) {
- clearTimeout(this.toastTimer);
- this.toastTimer = null;
- }
- }
+    const approveSub = this.leaveRequestService.updateStatus(request.id, 'Approved').subscribe({
+      next: () => {
+        this.isUpdatingStatus = false;
+        this.refreshData();
+        this.showToast('Leave request approved', 'success');
+      },
+      error: (error: { error?: { message?: string } }) => {
+        this.errorMessage = error?.error?.message || 'Failed to approve leave request';
+        this.isUpdatingStatus = false;
+      },
+    });
 
- private refreshData(): void {
- this.requests = this.leaveRequestService.getRequests();
+    this.subscription.add(approveSub);
+  }
 
- if (this.currentUserEmployeeId && !this.isAdmin) {
- this.requests = this.requests.filter((item) => item.employeeId === this.currentUserEmployeeId);
- this.activeTab = 'All';
- }
+  reject(request: LeaveRequest): void {
+    if (this.isUpdatingStatus) {
+      return;
+    }
 
- if (this.filterEmployeeId && this.isAdmin) {
- this.requests = this.requests.filter((item) => item.employeeId === this.filterEmployeeId);
- this.activeTab = 'All';
- }
- this.applyViewFilter();
- }
+    this.isUpdatingStatus = true;
+    this.errorMessage = '';
 
- private applyViewFilter(): void {
- if (this.activeTab === 'All') {
- this.visibleRequests = [...this.requests];
- return;
- }
+    const rejectSub = this.leaveRequestService.updateStatus(request.id, 'Rejected').subscribe({
+      next: () => {
+        this.isUpdatingStatus = false;
+        this.refreshData();
+        this.showToast('Leave request rejected', 'danger');
+      },
+      error: (error: { error?: { message?: string } }) => {
+        this.errorMessage = error?.error?.message || 'Failed to reject leave request';
+        this.isUpdatingStatus = false;
+      },
+    });
 
- this.visibleRequests = this.requests.filter((item) => item.status === this.activeTab);
- }
+    this.subscription.add(rejectSub);
+  }
 
- private getCountByStatus(status: LeaveStatus): number {
- return this.requests.filter((item) => item.status === status).length;
- }
+  shouldShowActionButtons(): boolean {
+    return this.isAdmin && !this.filterEmployeeId && this.activeTab === 'Pending';
+  }
 
- private showToast(message: string, type: 'success' | 'danger'): void {
- this.toastMessage = message;
- this.toastType = type;
- this.toastVisible = true;
+  onApplyLeave(): void {
+    this.router.navigate(['/apply']);
+  }
 
- if (this.toastTimer) {
- clearTimeout(this.toastTimer);
- }
+  getStatusClass(status: LeaveStatus): string {
+    if (status === 'Approved') {
+      return 'status-approved';
+    }
+    if (status === 'Rejected') {
+      return 'status-rejected';
+    }
+    return 'status-pending';
+  }
 
- this.toastTimer = setTimeout(() => {
- this.toastVisible = false;
- this.toastTimer = null;
- }, 2500);
- }
+  formatDate(date: string): string {
+    return this.datePipe.transform(date, 'MMM d, y') ?? date;
+  }
+
+  closeToast(): void {
+    this.toastVisible = false;
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+      this.toastTimer = null;
+    }
+  }
+
+  private loadCurrentUserProfileAndRefresh(): void {
+    if (!this.currentUserName) {
+      this.errorMessage = 'Current user profile is unavailable.';
+      this.requests = [];
+      this.visibleRequests = [];
+      return;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    const profileSub = this.leaveRequestService
+      .getEmployeeProfileByName(this.currentUserName)
+      .subscribe({
+        next: (profile: EmployeeLeaveProfile) => {
+          this.currentUserEmployeeId = profile.employeeId;
+          this.refreshData();
+        },
+        error: (error: { error?: { message?: string } }) => {
+          this.errorMessage = error?.error?.message || 'Failed to load employee profile';
+          this.requests = [];
+          this.visibleRequests = [];
+          this.isLoading = false;
+        },
+      });
+
+    this.subscription.add(profileSub);
+  }
+
+  private refreshData(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    const employeeIdFilter = this.isAdmin
+      ? this.filterEmployeeId || undefined
+      : this.currentUserEmployeeId || undefined;
+
+    const requestsSub = this.leaveRequestService
+      .getRequests(undefined, employeeIdFilter)
+      .subscribe({
+        next: (requests: LeaveRequest[]) => {
+          this.requests = requests;
+
+          if (this.currentUserEmployeeId && !this.isAdmin) {
+            this.activeTab = 'All';
+          }
+
+          if (this.filterEmployeeId && this.isAdmin) {
+            this.activeTab = 'All';
+          }
+
+          this.applyViewFilter();
+          this.isLoading = false;
+        },
+        error: (error: { error?: { message?: string } }) => {
+          this.errorMessage = error?.error?.message || 'Failed to load leave requests';
+          this.requests = [];
+          this.visibleRequests = [];
+          this.isLoading = false;
+        },
+      });
+
+    this.subscription.add(requestsSub);
+  }
+
+  private applyViewFilter(): void {
+    if (this.activeTab === 'All') {
+      this.visibleRequests = [...this.requests];
+      return;
+    }
+
+    this.visibleRequests = this.requests.filter((item) => item.status === this.activeTab);
+  }
+
+  private getCountByStatus(status: LeaveStatus): number {
+    return this.requests.filter((item) => item.status === status).length;
+  }
+
+  private showToast(message: string, type: 'success' | 'danger'): void {
+    this.toastMessage = message;
+    this.toastType = type;
+    this.toastVisible = true;
+
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+    }
+
+    this.toastTimer = setTimeout(() => {
+      this.toastVisible = false;
+      this.toastTimer = null;
+    }, 2500);
+  }
 }

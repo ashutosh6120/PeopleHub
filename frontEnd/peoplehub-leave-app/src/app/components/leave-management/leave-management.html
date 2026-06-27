@@ -3,81 +3,118 @@
     <div>
       <h1 *ngIf="isEmployeeMode">My Leave Requests</h1>
       <h1 *ngIf="!isEmployeeMode && !filterEmployeeId">Leave Requests</h1>
-      <h1 *ngIf="filterEmployeeId">Leave History for: <span>{{ filterEmployeeName || 'Selected Employee' }}</span></h1>
+      <h1 *ngIf="filterEmployeeId">
+        Leave History for: <span>{{ filterEmployeeName || 'Selected Employee' }}</span>
+      </h1>
 
       <div class="filter-links" *ngIf="filterEmployeeId">
-        <button type="button" class="link-btn" (click)="clearEmployeeFilter()">← Clear filter</button>
+        <button type="button" class="link-btn" (click)="clearEmployeeFilter()">
+          ← Clear filter
+        </button>
         <span>·</span>
-        <button type="button" class="link-btn" (click)="showAllRequests()">View all requests</button>
+        <button type="button" class="link-btn" (click)="showAllRequests()">
+          View all requests
+        </button>
       </div>
     </div>
 
-    <button type="button" class="btn-apply" *ngIf="isEmployeeMode" (click)="onApplyLeave()">+ Apply for Leave</button>
+    <button type="button" class="btn-apply" *ngIf="isEmployeeMode" (click)="onApplyLeave()">
+      + Apply for Leave
+    </button>
   </header>
 
-  <section class="balance-cards" *ngIf="isEmployeeMode">
-    <article class="balance-card" *ngFor="let balance of employeeLeaveBalances">
-      <div class="balance-top">
-        <h3>{{ balance.type }}</h3>
-        <span>{{ balance.remaining }}</span>
-      </div>
-      <div class="balance-bar">
-        <span [style.width.%]="balance.progressPct"></span>
-      </div>
-      <p>{{ balance.remaining }} of {{ balance.total }} days remaining</p>
-    </article>
-  </section>
+  @if (errorMessage) {
+    <div class="message message-error"><strong>Error:</strong> {{ errorMessage }}</div>
+  }
 
-  <div class="tabs" *ngIf="isAdmin && !filterEmployeeId">
-    <button
-      type="button"
-      *ngFor="let tab of tabs"
-      class="tab-btn"
-      [class.active]="activeTab === tab.key"
-      (click)="setTab(tab.key)"
-    >
-      {{ tab.label }}
-      <span class="tab-count">{{ tab.count }}</span>
-    </button>
-  </div>
+  @if (isLoading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading leave requests...</p>
+    </div>
+  } @else {
+    <section class="balance-cards" *ngIf="isEmployeeMode">
+      <article class="balance-card" *ngFor="let balance of employeeLeaveBalances">
+        <div class="balance-top">
+          <h3>{{ balance.type }}</h3>
+          <span>{{ balance.remaining }}</span>
+        </div>
+        <div class="balance-bar">
+          <span [style.width.%]="balance.progressPct"></span>
+        </div>
+        <p>{{ balance.remaining }} of {{ balance.total }} days remaining</p>
+      </article>
+    </section>
 
-  <section class="table-card" [class.employee-mode]="isEmployeeMode || !!filterEmployeeId">
-    <div class="table-header">
-      <span *ngIf="!isEmployeeMode && !filterEmployeeId">Employee</span>
-      <span>Type</span>
-      <span>From</span>
-      <span>To</span>
-      <span>Days</span>
-      <span>Reason</span>
-      <span>{{ shouldShowActionButtons() ? 'Actions' : 'Status' }}</span>
+    <div class="tabs" *ngIf="isAdmin && !filterEmployeeId">
+      <button
+        type="button"
+        *ngFor="let tab of tabs"
+        class="tab-btn"
+        [class.active]="activeTab === tab.key"
+        (click)="setTab(tab.key)"
+      >
+        {{ tab.label }}
+        <span class="tab-count">{{ tab.count }}</span>
+      </button>
     </div>
 
-    <div class="table-empty" *ngIf="visibleRequests.length === 0">
-      <div class="empty-icon">📅</div>
-      <p>No leave history for {{ filterEmployeeName || 'this user' }}</p>
-    </div>
-
-    <div class="table-row" *ngFor="let request of visibleRequests">
-      <div class="employee-cell" *ngIf="!isEmployeeMode && !filterEmployeeId">
-        <span class="avatar" [style.background]="request.avatarColor">{{ request.employeeInitials }}</span>
-        <strong>{{ request.employeeName }}</strong>
-      </div>
-      <span>{{ request.type }}</span>
-      <span>{{ formatDate(request.fromDate) }}</span>
-      <span>{{ formatDate(request.toDate) }}</span>
-      <span>{{ request.days }}</span>
-      <span>{{ request.reason }}</span>
-
-      <div class="action-cell" *ngIf="shouldShowActionButtons(); else statusTemplate">
-        <button class="btn-approve" type="button" (click)="approve(request)">✓ Approve</button>
-        <button class="btn-reject" type="button" (click)="reject(request)">✕ Reject</button>
+    <section class="table-card" [class.employee-mode]="isEmployeeMode || !!filterEmployeeId">
+      <div class="table-header">
+        <span *ngIf="!isEmployeeMode && !filterEmployeeId">Employee</span>
+        <span>Type</span>
+        <span>From</span>
+        <span>To</span>
+        <span>Days</span>
+        <span>Reason</span>
+        <span>{{ shouldShowActionButtons() ? 'Actions' : 'Status' }}</span>
       </div>
 
-      <ng-template #statusTemplate>
-        <span class="status-pill" [ngClass]="getStatusClass(request.status)">{{ request.status }}</span>
-      </ng-template>
-    </div>
-  </section>
+      <div class="table-empty" *ngIf="visibleRequests.length === 0">
+        <div class="empty-icon">📅</div>
+        <p>No leave history for {{ filterEmployeeName || 'this user' }}</p>
+      </div>
+
+      <div class="table-row" *ngFor="let request of visibleRequests">
+        <div class="employee-cell" *ngIf="!isEmployeeMode && !filterEmployeeId">
+          <span class="avatar" [style.background]="request.avatarColor">{{
+            request.employeeInitials
+          }}</span>
+          <strong>{{ request.employeeName }}</strong>
+        </div>
+        <span>{{ request.type }}</span>
+        <span>{{ formatDate(request.fromDate) }}</span>
+        <span>{{ formatDate(request.toDate) }}</span>
+        <span>{{ request.days }}</span>
+        <span>{{ request.reason }}</span>
+
+        <div class="action-cell" *ngIf="shouldShowActionButtons(); else statusTemplate">
+          <button
+            class="btn-approve"
+            type="button"
+            (click)="approve(request)"
+            [disabled]="isUpdatingStatus"
+          >
+            ✓ Approve
+          </button>
+          <button
+            class="btn-reject"
+            type="button"
+            (click)="reject(request)"
+            [disabled]="isUpdatingStatus"
+          >
+            ✕ Reject
+          </button>
+        </div>
+
+        <ng-template #statusTemplate>
+          <span class="status-pill" [ngClass]="getStatusClass(request.status)">{{
+            request.status
+          }}</span>
+        </ng-template>
+      </div>
+    </section>
+  }
 </div>
 
 <div class="toast" *ngIf="toastVisible" [class.toast-danger]="toastType === 'danger'">
