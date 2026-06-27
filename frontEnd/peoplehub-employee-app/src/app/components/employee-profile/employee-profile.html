@@ -4,7 +4,20 @@
         <h1>Employee Profile</h1>
     </div>
 
-    <div class="profile-card" *ngIf="employee as emp">
+    @if (errorMessage) {
+        <div class="error-message">
+            <strong>Error:</strong> {{ errorMessage }}
+        </div>
+    }
+
+    @if (isLoading) {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading employee profile...</p>
+        </div>
+    }
+
+    <div class="profile-card" *ngIf="!isLoading && employee as emp">
         <div class="card-banner"></div>
 
         <div class="avatar" [style.background]="avatarColor">
