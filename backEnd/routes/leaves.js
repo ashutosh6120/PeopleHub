@@ -7,7 +7,7 @@ const { authenticateToken, authorizeAdmin } = require('../middleware/auth.js');
 router.get('/', authenticateToken, leaveController.getLeaves);
 
 // Get leave balance
-router.get('/balance/:employeeId', authenticateToken, leaveController.getLeaveBalance);
+router.get('/balance/:id', authenticateToken, leaveController.getLeaveBalance);
 
 // Apply leave
 router.post('/', authenticateToken, leaveController.applyLeave);

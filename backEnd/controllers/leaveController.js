@@ -3,13 +3,14 @@ const Employee = require('../models/Employee.js');
 
 exports.getLeaves = async (req, res, next) => {
   try {
-    const { employeeId, status, page = 1, limit = 10 } = req.query;
+    const { employeeId, employee_id, status, page = 1, limit = 10 } = req.query;
+    const employeeFilter = employee_id || employeeId;
 
     let query = {};
 
     // Filter by employee
-    if (employeeId) {
-      query.employee = employeeId;
+    if (employeeFilter) {
+      query.employee = employeeFilter;
     }
 
     // Filter by status
@@ -52,15 +53,16 @@ exports.getLeaves = async (req, res, next) => {
 
 exports.applyLeave = async (req, res, next) => {
   try {
-    const { employeeId, leaveType, startDate, endDate, numberOfDays, reason } = req.body;
+    const { employeeId, employee_id, leaveType, startDate, endDate, numberOfDays, reason } = req.body;
+    const targetEmployeeId = employee_id || employeeId;
 
     // Validate required fields
-    if (!employeeId || !leaveType || !startDate || !endDate || !numberOfDays || !reason) {
+    if (!targetEmployeeId || !leaveType || !startDate || !endDate || !numberOfDays || !reason) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
     // Check if employee exists
-    const employee = await Employee.findById(employeeId);
+    const employee = await Employee.findById(targetEmployeeId);
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
     }
@@ -71,7 +73,7 @@ exports.applyLeave = async (req, res, next) => {
     }
 
     const leave = new Leave({
-      employee: employeeId,
+      employee: targetEmployeeId,
       leaveType,
       startDate,
       endDate,
@@ -123,7 +125,7 @@ exports.updateLeaveStatus = async (req, res, next) => {
 
 exports.getLeaveBalance = async (req, res, next) => {
   try {
-    const { employeeId } = req.params;
+    const employeeId  = req.params.id;
 
     const employee = await Employee.findById(employeeId);
     if (!employee) {
