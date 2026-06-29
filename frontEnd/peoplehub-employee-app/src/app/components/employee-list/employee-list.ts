@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, NgZone, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActionsCellRenderer } from './cell-renderers/actions-cell-renderer/actions-cell-renderer';
 import { DepartmentCellRenderer } from './cell-renderers/department-cell-renderer/department-cell-renderer';
 import { AvatarCellRenderer } from './cell-renderers/avatar-cell-renderer/avatar-cell-renderer';
@@ -33,10 +33,12 @@ export class EmployeeList implements OnInit, OnDestroy {
   private maxAuthRetries = 5;
   private authRetryCount = 0;
   private readonly onNavigationStateChange = () => {
-    const auth = this.syncUserState();
-    if (auth?.token && !this.isLoading) {
-      this.loadEmployees();
-    }
+    this.ngZone.run(() => {
+      const auth = this.syncUserState();
+      if (auth?.token && !this.isLoading) {
+        this.loadEmployees();
+      }
+    });
   };
 
   columnDefs: ColDef[] = [];
@@ -53,6 +55,7 @@ export class EmployeeList implements OnInit, OnDestroy {
   constructor(
     private employeeService: EmployeeService,
     private router: Router,
+    private ngZone: NgZone,
   ) {}
 
   ngOnInit(): void {
@@ -125,13 +128,15 @@ export class EmployeeList implements OnInit, OnDestroy {
     return user?.token ? { token: user.token } : null;
   }
 
-   loadEmployees(): void {
+  loadEmployees(): void {
     const auth = this.syncUserState();
 
     if (!auth?.token) {
       if (this.authRetryCount < this.maxAuthRetries) {
         this.authRetryCount += 1;
-        setTimeout(() => this.loadEmployees(), 250);
+        setTimeout(() => {
+          this.ngZone.run(() => this.loadEmployees());
+        }, 250);
         return;
       }
 
@@ -148,23 +153,23 @@ export class EmployeeList implements OnInit, OnDestroy {
       .pipe(
         finalize(() => {
           this.isLoading = false;
-        })
+        }),
       )
       .subscribe(
-      (response: any) => {
-        const employees = Array.isArray(response?.employees) ? response.employees : [];
-        this.employees = employees;
+        (response: any) => {
+          const employees = Array.isArray(response?.employees) ? response.employees : [];
+          this.employees = employees;
 
-        const pagination = response?.pagination || {};
-        this.totalRecords = pagination.total ?? employees.length;
-        this.totalPages = Math.max(1, pagination.pages ?? 1);
-        this.currentPage = pagination.page ?? this.currentPage;
-      },
-      (error: any) => {
-        this.errorMessage = error?.error?.message || 'Failed to load employees';
-        console.error('Error loading employees:', error);
-      }
-    );
+          const pagination = response?.pagination || {};
+          this.totalRecords = pagination.total ?? employees.length;
+          this.totalPages = Math.max(1, pagination.pages ?? 1);
+          this.currentPage = pagination.page ?? this.currentPage;
+        },
+        (error: any) => {
+          this.errorMessage = error?.error?.message || 'Failed to load employees';
+          console.error('Error loading employees:', error);
+        },
+      );
 
     this.subscription.add(loadSub);
   }
