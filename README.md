@@ -84,8 +84,31 @@ It includes employee directory management, leave application workflows, and admi
 
 ### Backend
 ```bash
-cd PeopleHub-main/backend
+cd PeopleHub-main/backEnd
 npm install
 npm run dev
+```
+
+### Employee Microfrontend
+```bash
+cd PeopleHub-main/frontEnd/peoplehub-employee-app
+npm install
+npm run start-spa-employee
+```
+
+### Leave Microfrontend
+```bash
+cd PeopleHub-main/frontEnd/peoplehub-leave-app
+npm install
+npm run start-spa-leave
+```
+
+### Root Config
+```bash
+cd PeopleHub-main/frontEnd/root-config
+npm install
+npm run start
+```
+
 
 [watch demo] (https://github.com/ashutosh6120/PeopleHub/releases/download/v1.0.0/peopleHub-Demo.mov)
