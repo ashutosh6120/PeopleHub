@@ -7,3 +7,5 @@ PeopleHub - Microfrontend HR Platform
 
 
 Tech: Angular 20, single-spa, Typescript, NodeJS, Express, MongoDB, JWT, SystemJS.
+
+[watch demo] (https://github.com/ashutosh6120/PeopleHub/releases/download/v1.0.0/peopleHub-Demo.mov)
