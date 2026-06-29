@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgGridAngular } from 'ag-grid-angular';
 import { DeleteConfirmDialog } from '../delete-confirm-dialog/delete-confirm-dialog';
-import { Subscription } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-employee-list',
@@ -32,6 +32,12 @@ export class EmployeeList implements OnInit, OnDestroy {
 
   private maxAuthRetries = 5;
   private authRetryCount = 0;
+  private readonly onNavigationStateChange = () => {
+    const auth = this.syncUserState();
+    if (auth?.token && !this.isLoading) {
+      this.loadEmployees();
+    }
+  };
 
   columnDefs: ColDef[] = [];
   defaultColDef: ColDef = {
@@ -51,10 +57,12 @@ export class EmployeeList implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.setupColumns();
+    window.addEventListener('popstate', this.onNavigationStateChange);
     this.loadEmployees();
   }
 
   ngOnDestroy(): void {
+    window.removeEventListener('popstate', this.onNavigationStateChange);
     this.subscription.unsubscribe();
   }
 
@@ -117,7 +125,7 @@ export class EmployeeList implements OnInit, OnDestroy {
     return user?.token ? { token: user.token } : null;
   }
 
-  loadEmployees(): void {
+   loadEmployees(): void {
     const auth = this.syncUserState();
 
     if (!auth?.token) {
@@ -137,20 +145,26 @@ export class EmployeeList implements OnInit, OnDestroy {
 
     const loadSub = this.employeeService
       .getEmployees(this.searchTerm || undefined, this.currentPage, this.pageSize)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+        })
+      )
       .subscribe(
-        (response: any) => {
-          this.employees = response.employees;
-          this.totalRecords = response.pagination?.total || this.employees.length;
-          this.totalPages = Math.max(1, response.pagination?.pages || 1);
-          this.currentPage = response.pagination?.page || this.currentPage;
-          this.isLoading = false;
-        },
-        (error: any) => {
-          this.errorMessage = error?.error?.message || 'Failed to load employees';
-          this.isLoading = false;
-          console.error('Error loading employees:', error);
-        },
-      );
+      (response: any) => {
+        const employees = Array.isArray(response?.employees) ? response.employees : [];
+        this.employees = employees;
+
+        const pagination = response?.pagination || {};
+        this.totalRecords = pagination.total ?? employees.length;
+        this.totalPages = Math.max(1, pagination.pages ?? 1);
+        this.currentPage = pagination.page ?? this.currentPage;
+      },
+      (error: any) => {
+        this.errorMessage = error?.error?.message || 'Failed to load employees';
+        console.error('Error loading employees:', error);
+      }
+    );
 
     this.subscription.add(loadSub);
   }

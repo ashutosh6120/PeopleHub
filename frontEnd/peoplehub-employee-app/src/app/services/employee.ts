@@ -60,15 +60,29 @@ export class EmployeeService {
     }
 
     return this.http
-      .get<EmployeeListApiResponse>(this.apiUrl, {
+      .get<any>(this.apiUrl, {
         params,
         headers: this.getHeaders(),
       })
       .pipe(
-        map((response: any) => ({
-          ...response,
-          employees: response.employees.map((employee: any) => this.mapEmployee(employee)),
-        })),
+        map((response: any) => {
+          const apiEmployees: EmployeeApiResponse[] = Array.isArray(response)
+            ? response
+            : response?.employees || [];
+
+          const mappedEmployees = apiEmployees.map((employee) => this.mapEmployee(employee));
+          const fallbackPages = Math.max(1, Math.ceil(mappedEmployees.length / limit));
+
+          return {
+            employees: mappedEmployees,
+            pagination: response?.pagination || {
+              total: mappedEmployees.length,
+              page,
+              limit,
+              pages: fallbackPages,
+            },
+          };
+        }),
       );
   }
 
