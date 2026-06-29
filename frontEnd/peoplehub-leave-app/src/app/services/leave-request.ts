@@ -4,6 +4,7 @@ import { Observable, map } from 'rxjs';
 import {
   BackendLeaveType,
   EmployeeLeaveProfile,
+  EmployeeListApiResponse,
   LeaveApiResponse,
   LeaveBalanceItem,
   LeaveRequest,
@@ -111,44 +112,60 @@ export class LeaveRequestService {
   }
 
   addRequest(input: NewLeaveRequestInput): Observable<LeaveRequest> {
+    const payload: {
+      employeeId?: string | number;
+      leaveType: BackendLeaveType;
+      startDate: string;
+      endDate: string;
+      numberOfDays: number;
+      reason: string;
+    } = {
+      leaveType: this.toBackendLeaveType(input.type),
+      startDate: input.fromDate,
+      endDate: input.toDate,
+      numberOfDays: input.days,
+      reason: input.reason,
+    };
+
+    if (input.employeeId) {
+      payload.employeeId = input.employeeId;
+    }
+
     return this.http
-      .post<{ leave: LeaveApiResponse }>(
-        this.leaveApiUrl,
-        {
-          employeeId: input.employeeId,
-          leaveType: this.toBackendLeaveType(input.type),
-          startDate: input.fromDate,
-          endDate: input.toDate,
-          numberOfDays: input.days,
-          reason: input.reason,
-        },
-        {
-          headers: this.getHeaders(),
-        },
-      )
+      .post<{ leave: LeaveApiResponse }>(this.leaveApiUrl, payload, {
+        headers: this.getHeaders(),
+      })
       .pipe(map((response) => this.mapLeaveRequest(response.leave)));
   }
 
-  getEmployeeProfileByName(name: string): Observable<EmployeeLeaveProfile> {
-    const params = new HttpParams().set('search', name).set('page', '1').set('limit', '100');
+  getEmployeeProfileByName(name: string, email?: string): Observable<EmployeeLeaveProfile> {
+    const searchValue = email || name;
+    const params = new HttpParams().set('search', searchValue).set('page', '1').set('limit', '100');
 
     return this.http
-      .get(this.employeeApiUrl, {
+      .get<EmployeeListApiResponse>(this.employeeApiUrl, {
         params,
         headers: this.getHeaders(),
       })
       .pipe(
-        map((response: any) => {
-          const matchedEmployee =
-            response.employees.find(
-              (employee: any) => employee.name.toLowerCase() === name.toLowerCase(),
-            ) || response.employees[0];
+        map((response) => {
+          const byEmail = email
+            ? response.employees.find(
+                (employee) => (employee.email || '').toLowerCase() === email.toLowerCase(),
+              )
+            : null;
+
+          const matchedEmployee = response.employees.find(
+            (employee) => employee.name.toLowerCase() === name.toLowerCase(),
+          );
+
+          const resolvedEmployee = byEmail || matchedEmployee || response.employees[0];
 
           return {
-            employeeId: matchedEmployee?._id || '',
-            employeeName: matchedEmployee?.name || name,
-            employeeInitials: this.getInitials(matchedEmployee?.name || name),
-            avatarColor: this.getAvatarColor(matchedEmployee?.name || name),
+            employeeId: resolvedEmployee?._id || '',
+            employeeName: resolvedEmployee?.name || name,
+            employeeInitials: this.getInitials(resolvedEmployee?.name || name),
+            avatarColor: this.getAvatarColor(resolvedEmployee?.name || name),
           };
         }),
       );

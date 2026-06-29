@@ -49,7 +49,7 @@ export class ApplyLeaveComponent implements OnInit, OnDestroy {
     this.isLoadingProfile = true;
     this.errorMessage = '';
 
-    const profileSub = this.leaveRequestService.getEmployeeProfileByName(user.name).subscribe({
+    const profileSub = this.leaveRequestService.getEmployeeProfileByName(user.name, user.email).subscribe({
       next: (profile: EmployeeLeaveProfile) => {
         this.employeeId = profile.employeeId;
         this.employeeName = profile.employeeName;

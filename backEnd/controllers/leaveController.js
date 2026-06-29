@@ -1,6 +1,6 @@
-const Leave = require('../models/Leave.js');
-const Employee = require('../models/Employee.js');
-const mongoose = require('mongoose');
+const Leave = require("../models/Leave.js");
+const Employee = require("../models/Employee.js");
+const mongoose = require("mongoose");
 
 exports.getLeaves = async (req, res, next) => {
   try {
@@ -20,18 +20,20 @@ exports.getLeaves = async (req, res, next) => {
     }
 
     // Admin can see all, employee can only see their own
-    if (req.user.role === 'employee') {
+    if (req.user.role === "employee") {
       // Find employee record for this user
       const employee = await Employee.findOne({ user: req.user.id });
       if (employee) {
         query.employee = employee._id;
+      } else {
+        query.employee = null;
       }
     }
 
     const skip = (page - 1) * limit;
     const leaves = await Leave.find(query)
-      .populate('employee', 'name email department')
-      .populate('approvedBy', 'name email')
+      .populate("employee", "name email department")
+      .populate("approvedBy", "name email")
       .skip(skip)
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });
@@ -44,8 +46,8 @@ exports.getLeaves = async (req, res, next) => {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     next(error);
@@ -54,8 +56,33 @@ exports.getLeaves = async (req, res, next) => {
 
 exports.applyLeave = async (req, res, next) => {
   try {
-    const { employeeId, employee_id, leaveType, startDate, endDate, numberOfDays, reason } = req.body;
-    const targetEmployeeId = employee_id || employeeId;
+    const { leaveType, startDate, endDate, numberOfDays, reason } = req.body;
+    let targetEmployeeId;
+
+    if (req.user?.role === 'employee') {
+      // Always resolve from the JWT token for employee users — never trust frontend-supplied id
+      let employee = await Employee.findOne({ user: req.user.id });
+
+      if (!employee) {
+        // Auto-create a minimal employee record linked to this user account
+        employee = new Employee({
+          name: req.user.name || 'Unknown',
+          email: req.user.email || `user_${req.user.id}@company.com`,
+          phone: '0000000000',
+          department: 'Engineering',
+          position: 'Employee',
+          joiningDate: new Date(),
+          user: req.user.id,
+        });
+        await employee.save();
+      }
+
+      targetEmployeeId = employee._id;
+    } else {
+      // Admin submitting on behalf — use provided employeeId
+      const { employeeId, employee_id } = req.body;
+      targetEmployeeId = employee_id || employeeId;
+    }
 
     // Validate required fields
     if (!targetEmployeeId || !leaveType || !startDate || !endDate || !numberOfDays || !reason) {
@@ -99,13 +126,15 @@ exports.updateLeaveStatus = async (req, res, next) => {
     const { status } = req.body;
 
     // Validate status
-    if (!['Approved', 'Rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status. Must be Approved or Rejected' });
+    if (!["Approved", "Rejected"].includes(status)) {
+      return res
+        .status(400)
+        .json({ error: "Invalid status. Must be Approved or Rejected" });
     }
 
     const leave = await Leave.findById(req.params.id);
     if (!leave) {
-      return res.status(404).json({ error: 'Leave request not found' });
+      return res.status(404).json({ error: "Leave request not found" });
     }
 
     leave.status = status;
@@ -116,13 +145,13 @@ exports.updateLeaveStatus = async (req, res, next) => {
     await leave.save();
 
     const populatedLeave = await leave.populate([
-      { path: 'employee', select: 'name email' },
-      { path: 'approvedBy', select: 'name' }
+      { path: "employee", select: "name email" },
+      { path: "approvedBy", select: "name" },
     ]);
 
     res.json({
       message: `Leave request ${status.toLowerCase()} successfully`,
-      leave: populatedLeave
+      leave: populatedLeave,
     });
   } catch (error) {
     next(error);
@@ -131,11 +160,11 @@ exports.updateLeaveStatus = async (req, res, next) => {
 
 exports.getLeaveBalance = async (req, res, next) => {
   try {
-    const employeeId  = req.params.id;
+    const employeeId = req.params.id;
 
     const employee = await Employee.findById(employeeId);
     if (!employee) {
-      return res.status(404).json({ error: 'Employee not found' });
+      return res.status(404).json({ error: "Employee not found" });
     }
 
     // Get approved leave days by type
@@ -143,28 +172,28 @@ exports.getLeaveBalance = async (req, res, next) => {
       {
         $match: {
           employee: new mongoose.Types.ObjectId(employeeId),
-          status: 'Approved'
-        }
+          status: "Approved",
+        },
       },
       {
         $group: {
-          _id: '$leaveType',
-          totalDays: { $sum: '$numberOfDays' }
-        }
-      }
+          _id: "$leaveType",
+          totalDays: { $sum: "$numberOfDays" },
+        },
+      },
     ]);
 
     // Define leave entitlements
     const leaveEntitlements = {
       Sick: 10,
       Casual: 12,
-      Earned: 20
+      Earned: 20,
     };
 
     // Calculate remaining balance
     const balanceMap = {};
     for (const [type, entitlement] of Object.entries(leaveEntitlements)) {
-      const used = balances.find(b => b._id === type)?.totalDays || 0;
+      const used = balances.find((b) => b._id === type)?.totalDays || 0;
       balanceMap[type] = entitlement - used;
     }
 
@@ -172,10 +201,10 @@ exports.getLeaveBalance = async (req, res, next) => {
       employee: {
         id: employee._id,
         name: employee.name,
-        email: employee.email
+        email: employee.email,
       },
       balance: balanceMap,
-      entitlements: leaveEntitlements
+      entitlements: leaveEntitlements,
     });
   } catch (error) {
     next(error);
