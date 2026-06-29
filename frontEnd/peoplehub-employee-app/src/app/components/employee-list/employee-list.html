@@ -19,9 +19,7 @@
   </div>
 
   @if (errorMessage) {
-    <div class="error-message">
-      <strong>Error:</strong> {{ errorMessage }}
-    </div>
+    <div class="error-message"><strong>Error:</strong> {{ errorMessage }}</div>
   }
 
   @if (isLoading) {
@@ -35,13 +33,45 @@
       [rowData]="employees"
       [columnDefs]="columnDefs"
       [defaultColDef]="defaultColDef"
-      [pagination]="true"
-      [paginationPageSize]="10"
-      [paginationPageSizeSelector]="[10, 20, 50]"
+      [pagination]="false"
       [domLayout]="'autoHeight'"
       [rowHeight]="56"
       [headerHeight]="48"
     />
+
+    <div class="pagination-footer">
+      <div class="page-size">
+        <label for="page-size">Page Size:</label>
+        <select
+          id="page-size"
+          [value]="pageSize"
+          (change)="onPageSizeChange($any($event.target).value)"
+          [disabled]="isLoading"
+        >
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+
+      <div class="page-meta">
+        <span>{{ pageStartRecord }} to {{ pageEndRecord }} of {{ totalRecords }}</span>
+      </div>
+
+      <div class="page-nav">
+        <button type="button" (click)="onPreviousPage()" [disabled]="isLoading || currentPage <= 1">
+          Prev
+        </button>
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <button
+          type="button"
+          (click)="onNextPage()"
+          [disabled]="isLoading || currentPage >= totalPages"
+        >
+          Next
+        </button>
+      </div>
+    </div>
   }
 
   <app-delete-confirm-dialog (confirmDelete)="onConfirmDelete($event)" />

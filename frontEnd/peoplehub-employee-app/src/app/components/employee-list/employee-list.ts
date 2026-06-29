@@ -25,6 +25,13 @@ export class EmployeeList implements OnInit, OnDestroy {
   isAdmin = false;
   isLoading = false;
   errorMessage = '';
+  pageSize = 10;
+  currentPage = 1;
+  totalRecords = 0;
+  totalPages = 1;
+
+  private maxAuthRetries = 5;
+  private authRetryCount = 0;
 
   columnDefs: ColDef[] = [];
   defaultColDef: ColDef = {
@@ -39,12 +46,10 @@ export class EmployeeList implements OnInit, OnDestroy {
 
   constructor(
     private employeeService: EmployeeService,
-    private router: Router
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
-    const user = (window as any).__HR_PORTAL_USER__;
-    this.isAdmin = user?.role === 'Admin';
     this.setupColumns();
     this.loadEmployees();
   }
@@ -73,7 +78,11 @@ export class EmployeeList implements OnInit, OnDestroy {
         field: 'joiningDate',
         valueFormatter: (params) => {
           const date = new Date(params.value);
-          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          });
         },
       },
       {
@@ -88,34 +97,110 @@ export class EmployeeList implements OnInit, OnDestroy {
     ];
   }
 
+  private getCurrentUser(): any {
+    const globalUser = (window as any).__HR_PORTAL_USER__;
+    if (globalUser) {
+      return globalUser;
+    }
+
+    try {
+      const storedUser = localStorage.getItem('hr_portal_user');
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private syncUserState(): { token: string } | null {
+    const user = this.getCurrentUser();
+    this.isAdmin = user?.role === 'Admin' || user?.apiRole === 'admin';
+    return user?.token ? { token: user.token } : null;
+  }
+
   loadEmployees(): void {
+    const auth = this.syncUserState();
+
+    if (!auth?.token) {
+      if (this.authRetryCount < this.maxAuthRetries) {
+        this.authRetryCount += 1;
+        setTimeout(() => this.loadEmployees(), 250);
+        return;
+      }
+
+      this.errorMessage = 'Failed to load employees';
+      return;
+    }
+
+    this.authRetryCount = 0;
     this.isLoading = true;
     this.errorMessage = '';
 
-    const loadSub = this.employeeService.getEmployees(this.searchTerm || undefined, 1, 10).subscribe(
-      (response: any) => {
-        this.employees = response.employees;
-        this.isLoading = false;
-      },
-      (error: any) => {
-        this.errorMessage = error?.error?.message || 'Failed to load employees';
-        this.isLoading = false;
-        console.error('Error loading employees:', error);
-      }
-    );
+    const loadSub = this.employeeService
+      .getEmployees(this.searchTerm || undefined, this.currentPage, this.pageSize)
+      .subscribe(
+        (response: any) => {
+          this.employees = response.employees;
+          this.totalRecords = response.pagination?.total || this.employees.length;
+          this.totalPages = Math.max(1, response.pagination?.pages || 1);
+          this.currentPage = response.pagination?.page || this.currentPage;
+          this.isLoading = false;
+        },
+        (error: any) => {
+          this.errorMessage = error?.error?.message || 'Failed to load employees';
+          this.isLoading = false;
+          console.error('Error loading employees:', error);
+        },
+      );
 
     this.subscription.add(loadSub);
   }
 
   onSearch(): void {
+    this.currentPage = 1;
     this.loadEmployees();
+  }
+
+  onPageSizeChange(value: string): void {
+    this.pageSize = Number(value);
+    this.currentPage = 1;
+    this.loadEmployees();
+  }
+
+  onPreviousPage(): void {
+    if (this.currentPage <= 1 || this.isLoading) {
+      return;
+    }
+
+    this.currentPage -= 1;
+    this.loadEmployees();
+  }
+
+  onNextPage(): void {
+    if (this.currentPage >= this.totalPages || this.isLoading) {
+      return;
+    }
+
+    this.currentPage += 1;
+    this.loadEmployees();
+  }
+
+  get pageStartRecord(): number {
+    if (this.totalRecords === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  get pageEndRecord(): number {
+    return Math.min(this.currentPage * this.pageSize, this.totalRecords);
   }
 
   onAdd(): void {
     this.router.navigate(['/add']);
   }
 
-  onConfirmDelete(employeeId: number): void {
+  onConfirmDelete(employeeId: string | number): void {
     this.isLoading = true;
     this.errorMessage = '';
 
@@ -128,7 +213,7 @@ export class EmployeeList implements OnInit, OnDestroy {
         this.errorMessage = error?.error?.message || 'Failed to delete employee';
         this.isLoading = false;
         console.error('Error deleting employee:', error);
-      }
+      },
     );
 
     this.subscription.add(deleteSub);

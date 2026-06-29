@@ -9,7 +9,7 @@ import { DeleteDialogService } from '../../services/delete-dialog';
   styleUrl: './delete-confirm-dialog.scss',
 })
 export class DeleteConfirmDialog {
-  @Output() confirmDelete = new EventEmitter<number>();
+  @Output() confirmDelete = new EventEmitter<string | number>();
 
   protected readonly deleteDialog = inject(DeleteDialogService);
 

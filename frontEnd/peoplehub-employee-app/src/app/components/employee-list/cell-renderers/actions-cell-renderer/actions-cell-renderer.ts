@@ -11,17 +11,29 @@ import { ICellRendererParams } from 'ag-grid-community';
   templateUrl: './actions-cell-renderer.html',
   styleUrl: './actions-cell-renderer.scss',
 })
-export class ActionsCellRenderer implements ICellRendererAngularComp{
-  employeeId = 0;
+export class ActionsCellRenderer implements ICellRendererAngularComp {
+  employeeId: string | number = 0;
   employeeName = '';
   isAdmin = false;
 
-  constructor(private router: Router, private deleteDialog: DeleteDialogService) {} 
+  constructor(
+    private router: Router,
+    private deleteDialog: DeleteDialogService,
+  ) {}
 
-  agInit(params: ICellRendererParams){
+  agInit(params: ICellRendererParams) {
     this.employeeId = params.value;
     this.employeeName = params.data.name;
-    const user = (window as any).__HR_PORTAL_USER__;
+    let user = (window as any).__HR_PORTAL_USER__;
+    if (!user) {
+      try {
+        const storedUser = localStorage.getItem('hr_portal_user');
+        user = storedUser ? JSON.parse(storedUser) : null;
+      } catch {
+        user = null;
+      }
+    }
+
     this.isAdmin = user?.role === 'Admin';
   }
 

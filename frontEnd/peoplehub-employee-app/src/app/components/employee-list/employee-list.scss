@@ -43,13 +43,13 @@
     outline: none;
 
     &:focus {
-      border-color: #1976D2;
+      border-color: #1976d2;
     }
   }
 }
 
 .btn-add {
-  background: #1976D2;
+  background: #1976d2;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -59,7 +59,7 @@
   cursor: pointer;
 
   &:hover {
-    background: #1565C0;
+    background: #1565c0;
   }
 }
 
@@ -85,10 +85,12 @@
 
 .btn-view {
   background: #e3f2fd;
-  color: #1976D2;
+  color: #1976d2;
   border-color: #bbdefb;
 
-  &:hover { background: #bbdefb; }
+  &:hover {
+    background: #bbdefb;
+  }
 }
 
 .btn-edit {
@@ -96,7 +98,9 @@
   color: #333;
   border-color: #e0e0e0;
 
-  &:hover { background: #e0e0e0; }
+  &:hover {
+    background: #e0e0e0;
+  }
 }
 
 .error-message {
@@ -108,7 +112,9 @@
   margin-bottom: 16px;
   font-size: 14px;
 
-  strong { font-weight: 600; }
+  strong {
+    font-weight: 600;
+  }
 }
 
 .loading-spinner {
@@ -122,7 +128,7 @@
     width: 40px;
     height: 40px;
     border: 4px solid #f0f0f0;
-    border-top: 4px solid #1976D2;
+    border-top: 4px solid #1976d2;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 16px;
@@ -136,8 +142,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 input:disabled {
@@ -152,10 +162,62 @@ button:disabled {
   opacity: 0.6;
 }
 
+.pagination-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e0e0e0;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  margin-top: -2px;
+  background: #fff;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.page-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  select {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+  }
+}
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  button {
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #374151;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+
+    &:disabled {
+      background: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+  }
+}
+
 .btn-delete {
   background: #ffebee;
-  color: #D32F2F;
+  color: #d32f2f;
   border-color: #ffcdd2;
 
-  &:hover { background: #ffcdd2; }
+  &:hover {
+    background: #ffcdd2;
+  }
 }

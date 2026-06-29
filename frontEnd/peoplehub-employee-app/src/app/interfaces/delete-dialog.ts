@@ -1,5 +1,5 @@
 export interface DeleteDialogState {
     isOpen: boolean;
-    employeeId: number | null;
+    employeeId: string | number | null;
     employeeName: string;
 }

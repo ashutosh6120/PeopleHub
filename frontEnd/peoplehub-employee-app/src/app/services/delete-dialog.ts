@@ -11,7 +11,7 @@ export class DeleteDialogService {
         employeeName: '',
     });
 
-    open(employeeId: number, employeeName: string) {
+    open(employeeId: string | number, employeeName: string) {
         this.state.set({
             isOpen: true,
             employeeId,
